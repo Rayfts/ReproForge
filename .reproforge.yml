@@ -1,0 +1,50 @@
+setup:
+  - argv:
+      - python
+      - -m
+      - venv
+      - /workspace/.reproforge/runtime/venv
+    purpose: setup
+  - argv:
+      - /workspace/.reproforge/runtime/venv/bin/python
+      - -m
+      - pip
+      - install
+      - -e
+      - .[dev]
+    timeout_seconds: 600
+    purpose: setup
+
+tests:
+  - argv:
+      - /workspace/.reproforge/runtime/venv/bin/python
+      - -m
+      - pytest
+      - -q
+      - -m
+      - not integration
+    timeout_seconds: 600
+    purpose: test
+
+reproduction_attempts: 3
+flake_threshold: 0.34
+
+sandbox:
+  backend: docker
+  image: python:3.12-slim
+  network: bridge
+  read_only_root: true
+  limits:
+    timeout_seconds: 600
+    memory_mb: 2048
+    cpus: 2
+    pids: 256
+
+security:
+  allowed_secrets: []
+  allowed_environment: []
+  allowed_network_domains: []
+
+minimization:
+  enabled: true
+  max_trials: 32
