@@ -18,9 +18,10 @@ from reproforge.cli.runtime import (
     validate_harness,
 )
 from reproforge.core.config import ReproForgeConfig, load_config
-from reproforge.core.models import ReproductionRequest
-from reproforge.github.client import GitHubClient
+from reproforge.core.models import ReproductionReport, ReproductionRequest
+from reproforge.github.client import GitHubClient, GitHubError
 from reproforge.repository.git import GitRepository
+from reproforge.reports.github import render_issue_comment
 from reproforge.reproduction.engine import ReproductionEngine
 from reproforge.sandbox.docker import DockerSandbox
 
@@ -33,9 +34,11 @@ async def run_issue(
     image: str | None,
     harness_image: str | None,
     config_path: Path | None,
+    post_comment: bool = False,
 ) -> None:
     validate_harness(harness)
-    issue = await GitHubClient().fetch_issue(url)
+    client = GitHubClient()
+    issue = await client.fetch_issue(url)
     workspace = home() / "workspaces" / uuid.uuid4().hex
     console.print(f"Cloning [bold]{issue.ref.owner}/{issue.ref.repo}[/bold] into {workspace}")
     await GitRepository.clone(issue.repository_clone_url, workspace, revision=revision)
@@ -51,7 +54,12 @@ async def run_issue(
         target_revision=revision,
         harness=harness or cfg.harness.preferred,
     )
-    await _execute_and_archive(cfg, request, workspace)
+    report = await _execute_and_archive(cfg, request, workspace)
+    if post_comment:
+        try:
+            await client.post_issue_comment(issue.ref, render_issue_comment(report))
+        except GitHubError as exc:
+            console.print(f"[yellow]Evidence saved, but issue comment could not be posted: {exc}[/yellow]")
 
 
 async def run_local(
@@ -138,11 +146,12 @@ async def _execute_and_archive(
     config: ReproForgeConfig,
     request: ReproductionRequest,
     workspace: Path,
-) -> None:
+) -> ReproductionReport:
     report = await ReproductionEngine(config).run(request, workspace=workspace)
     archive = archive_run(workspace, report)
     store().upsert(report.run_id, archive, report.status.value)
     print_report(report)
+    return report
 
 
 def _configured(
