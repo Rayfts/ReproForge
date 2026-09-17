@@ -49,7 +49,6 @@ class ReproductionEngine:
         started = utcnow()
         run_id = uuid.uuid4().hex
         workspace = workspace.resolve()
-
         workspace_error = workspace_policy_error(self.config, workspace)
         if workspace_error is not None:
             return terminal_report(
@@ -105,6 +104,7 @@ class ReproductionEngine:
 
         setup_results: list[CommandResult] = []
         baseline_results: list[CommandResult] = []
+        harness_results: list[CommandResult] = []
         attempts: list[AttemptRecord] = []
         harness_interpretation: str | None = None
         generated_regression_test: str | None = None
@@ -133,10 +133,7 @@ class ReproductionEngine:
                 return report
 
             baseline_results = await run_commands(session, baseline_plan(inspection.profile, self.config))
-            failed_baseline = next(
-                (result for result in baseline_results if not command_succeeded(result)),
-                None,
-            )
+            failed_baseline = next((result for result in baseline_results if not command_succeeded(result)), None)
             if failed_baseline is not None:
                 report = terminal_report(
                     request=request,
@@ -160,7 +157,7 @@ class ReproductionEngine:
             selected_harness = request.harness or self.config.harness.preferred
             plan = HarnessPlan()
             if selected_harness:
-                plan, harness_interpretation, harness_caveats = await investigate_harness(
+                plan, harness_interpretation, harness_caveats, harness_results = await investigate_harness(
                     self.sandbox,
                     self.config,
                     selected_harness,
@@ -192,6 +189,7 @@ class ReproductionEngine:
                     ),
                     setup_results=setup_results,
                     baseline_results=baseline_results,
+                    harness_results=harness_results,
                     harness_id=selected_harness,
                     harness_interpretation=harness_interpretation,
                     generated_regression_test=generated_regression_test,
@@ -228,6 +226,7 @@ class ReproductionEngine:
                 environment=environment,
                 setup_commands=setup_results,
                 baseline_commands=baseline_results,
+                harness_commands=harness_results,
                 attempts=attempts,
                 primary_signal=primary,
                 reproduction_rate=rate,
