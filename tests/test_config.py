@@ -33,8 +33,10 @@ def test_github_control_plane_tokens_are_never_injected(monkeypatch) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "must-not-leak")
     monkeypatch.setenv("GH_TOKEN", "also-must-not-leak")
     monkeypatch.setenv("REPROFORGE_SECRET_GRANTS", "GITHUB_TOKEN,GH_TOKEN")
+    monkeypatch.setenv("REPROFORGE_ENV_GRANTS", "GITHUB_TOKEN,GH_TOKEN")
     config = ReproForgeConfig()
     config.security.allowed_secrets = ["GITHUB_TOKEN", "GH_TOKEN"]
+    config.security.allowed_environment = ["GITHUB_TOKEN", "GH_TOKEN"]
 
     assert config.selected_environment() == {}
 
