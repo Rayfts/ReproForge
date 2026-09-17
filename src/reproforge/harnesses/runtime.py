@@ -27,9 +27,7 @@ class DockerHarnessRuntime(HarnessRuntime):
         harness_id: str,
     ) -> AsyncIterator[HarnessEvent]:
         if invocation.stdin_text is not None:
-            raise RuntimeError(
-                "stdin-driven harness invocations are not implemented by the Docker runtime yet"
-            )
+            raise RuntimeError("stdin-driven harness invocations are not implemented by the Docker runtime yet")
 
         yield HarnessEvent(
             kind=HarnessEventKind.START,
