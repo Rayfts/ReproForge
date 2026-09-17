@@ -33,7 +33,9 @@ When using an agent, set `harness.image` if the project image does not contain t
 
 ## Network policy
 
-Docker's `none` and `bridge` modes are implemented. Domain allowlists are **not yet enforced** by the Docker backend. `security.allowed_network_domains` exists for forward-compatible configuration and must not be treated as a firewall rule today.
+Docker's `none` and `bridge` modes are implemented. Domain allowlists are **not yet enforceable** by the Docker backend. If `security.allowed_network_domains` is non-empty, ReproForge fails closed before repository code executes instead of silently degrading the request to unrestricted bridge networking.
+
+Use `network: none` for the safest default. `network: bridge` permits the container's normal Docker bridge connectivity and should be enabled only when repository setup or reproduction genuinely requires network access.
 
 ## Secret injection
 
