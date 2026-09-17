@@ -19,11 +19,19 @@ A run uses:
 
 The control process refuses to execute repository commands directly on the host if Docker is unavailable.
 
+## Workspace mount policy
+
+Before inspecting or mounting a local workspace, ReproForge resolves the path and checks it against a non-removable sensitive-path baseline: `~/.ssh`, `~/.aws`, `~/.config/gh`, and `/var/run/docker.sock`. A workspace is rejected if it equals, contains, or sits inside one of those paths. Repository configuration can add entries through `security.forbidden_filesystem_paths`, but it cannot remove the baseline protections.
+
+A blocked run does not create `.reproforge` inside the rejected workspace. Its minimal infrastructure-failure evidence is written only to the control-plane run archive under `REPROFORGE_HOME`.
+
 ## Persistent run container
 
 Setup, baseline, and independent attempts share one disposable `DockerSession`. Language caches and virtual environments are placed under `.reproforge/runtime` in the workspace because the container root is read-only. Runtime caches are excluded from exported evidence.
 
 A separate disposable harness container can share the workspace. This lets the agent create a failing test or reproduction artifact while keeping its own executable/provider stack independent from the project runtime image.
+
+If a command times out, ReproForge stops and restarts that disposable run container before continuing so a killed host-side `docker exec` client cannot leave an unknown process running in the sandbox.
 
 ## Images
 
@@ -39,7 +47,9 @@ Use `network: none` for the safest default. `network: bridge` permits the contai
 
 ## Secret injection
 
-Secrets are opt-in. An allowed secret is available to every process in the container receiving it; use only credentials whose exposure to the target repository is acceptable.
+Repository configuration may request host environment names, but it does not authorize them. The operator must separately grant ordinary environment names through `REPROFORGE_ENV_GRANTS` and secret names through `REPROFORGE_SECRET_GRANTS`. `GITHUB_TOKEN` and `GH_TOKEN` are reserved control-plane credentials and are never injected into a sandbox through either grant channel.
+
+An injected non-control-plane secret is available to every process in the receiving container. Use only credentials whose exposure to the target repository is acceptable.
 
 ## Future backends
 
