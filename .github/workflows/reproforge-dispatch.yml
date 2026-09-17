@@ -44,10 +44,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - run: python -m pip install -e .
       - name: Resolve issue inputs
         id: inputs
         env:
@@ -63,21 +59,14 @@ jobs:
             exit 2
           fi
           echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
-      - name: Run ReproForge
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          ISSUE_URL: ${{ steps.inputs.outputs.issue_url }}
-          IMAGE: ${{ inputs.image || '' }}
-          HARNESS: ${{ inputs.harness || '' }}
-          HARNESS_IMAGE: ${{ inputs.harness_image || '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          args=(issue "$ISSUE_URL" --post-comment)
-          if [[ -n "$IMAGE" ]]; then args+=(--image "$IMAGE"); fi
-          if [[ -n "$HARNESS" ]]; then args+=(--harness "$HARNESS"); fi
-          if [[ -n "$HARNESS_IMAGE" ]]; then args+=(--harness-image "$HARNESS_IMAGE"); fi
-          reproforge "${args[@]}"
+      - name: Run ReproForge action
+        uses: ./
+        with:
+          issue-url: ${{ steps.inputs.outputs.issue_url }}
+          image: ${{ inputs.image || '' }}
+          harness: ${{ inputs.harness || '' }}
+          harness-image: ${{ inputs.harness_image || '' }}
+          post-comment: "true"
       - name: Collect archived evidence
         if: always()
         run: |
