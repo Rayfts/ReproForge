@@ -1,0 +1,56 @@
+name: ReproForge issue reproduction
+description: Reproduce a GitHub issue as evidence inside a hardened Docker sandbox.
+author: ReproForge contributors
+
+inputs:
+  issue-url:
+    description: GitHub issue URL to reproduce.
+    required: true
+  image:
+    description: Optional Docker image override for target-repository execution.
+    required: false
+    default: ""
+  harness:
+    description: Optional ReproForge harness id.
+    required: false
+    default: ""
+  harness-image:
+    description: Optional Docker image containing the selected harness executable.
+    required: false
+    default: ""
+  post-comment:
+    description: Post a concise evidence summary back to the issue.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+    - name: Install ReproForge
+      shell: bash
+      run: python -m pip install "$GITHUB_ACTION_PATH"
+    - name: Reproduce issue
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        ISSUE_URL: ${{ inputs.issue-url }}
+        IMAGE: ${{ inputs.image }}
+        HARNESS: ${{ inputs.harness }}
+        HARNESS_IMAGE: ${{ inputs.harness-image }}
+        POST_COMMENT: ${{ inputs.post-comment }}
+      run: |
+        set -euo pipefail
+        args=(issue "$ISSUE_URL")
+        if [[ -n "$IMAGE" ]]; then args+=(--image "$IMAGE"); fi
+        if [[ -n "$HARNESS" ]]; then args+=(--harness "$HARNESS"); fi
+        if [[ -n "$HARNESS_IMAGE" ]]; then args+=(--harness-image "$HARNESS_IMAGE"); fi
+        if [[ "$POST_COMMENT" == "true" ]]; then args+=(--post-comment); fi
+        reproforge "${args[@]}"
+
+branding:
+  icon: activity
+  color: orange
