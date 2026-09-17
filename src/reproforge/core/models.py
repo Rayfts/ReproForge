@@ -158,6 +158,7 @@ class ReproductionReport(StrictModel):
     environment: EnvironmentSnapshot
     setup_commands: list[CommandResult] = Field(default_factory=list)
     baseline_commands: list[CommandResult] = Field(default_factory=list)
+    harness_commands: list[CommandResult] = Field(default_factory=list)
     attempts: list[AttemptRecord] = Field(default_factory=list)
     primary_signal: FailureSignal | None = None
     reproduction_rate: float = Field(ge=0.0, le=1.0)
