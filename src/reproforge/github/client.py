@@ -23,13 +23,16 @@ class GitHubClient:
     base_url: str = "https://api.github.com"
     timeout: float = 20.0
 
+    def resolved_token(self) -> str | None:
+        return self.token or os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
+
     def _headers(self) -> dict[str, str]:
         headers = {
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "User-Agent": "ReproForge/0.1",
         }
-        token = self.token or os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
+        token = self.resolved_token()
         if token:
             headers["Authorization"] = f"Bearer {token}"
         return headers
@@ -85,8 +88,7 @@ class GitHubClient:
         )
 
     async def post_issue_comment(self, issue: IssueRef, body: str) -> None:
-        token = self.token or os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
-        if not token:
+        if not self.resolved_token():
             raise GitHubError("posting a comment requires GITHUB_TOKEN or GH_TOKEN")
         async with httpx.AsyncClient(
             base_url=self.base_url,
