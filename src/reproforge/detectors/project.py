@@ -60,36 +60,24 @@ def _detect_python(root: Path, profile: ProjectProfile) -> None:
         profile.frameworks.append("Flask")
         profile.services.append("HTTP server")
 
-    has_pytest = (
-        "pytest" in joined
-        or (root / "pytest.ini").exists()
-        or (root / "tests").is_dir()
-    )
+    has_pytest = "pytest" in joined or (root / "pytest.ini").exists() or (root / "tests").is_dir()
     if has_pytest:
         profile.test_runners.append("pytest")
 
     if uv_lock.exists():
         profile.lockfiles.append("uv.lock")
         profile.package_managers.append("uv")
-        profile.setup_commands.append(
-            CommandSpec(argv=["uv", "sync", "--frozen"], purpose="setup")
-        )
+        profile.setup_commands.append(CommandSpec(argv=["uv", "sync", "--frozen"], purpose="setup"))
         if has_pytest:
-            profile.test_commands.append(
-                CommandSpec(argv=["uv", "run", "pytest", "-q"], purpose="test")
-            )
+            profile.test_commands.append(CommandSpec(argv=["uv", "run", "pytest", "-q"], purpose="test"))
         return
 
     if poetry_lock.exists():
         profile.lockfiles.append("poetry.lock")
         profile.package_managers.append("poetry")
-        profile.setup_commands.append(
-            CommandSpec(argv=["poetry", "install", "--no-interaction"], purpose="setup")
-        )
+        profile.setup_commands.append(CommandSpec(argv=["poetry", "install", "--no-interaction"], purpose="setup"))
         if has_pytest:
-            profile.test_commands.append(
-                CommandSpec(argv=["poetry", "run", "pytest", "-q"], purpose="test")
-            )
+            profile.test_commands.append(CommandSpec(argv=["poetry", "run", "pytest", "-q"], purpose="test"))
         return
 
     profile.package_managers.append("pip")
@@ -115,9 +103,7 @@ def _detect_python(root: Path, profile: ProjectProfile) -> None:
             )
         )
     if has_pytest:
-        profile.test_commands.append(
-            CommandSpec(argv=[_VENV_PYTHON, "-m", "pytest", "-q"], purpose="test")
-        )
+        profile.test_commands.append(CommandSpec(argv=[_VENV_PYTHON, "-m", "pytest", "-q"], purpose="test"))
 
 
 def _detect_node(root: Path, profile: ProjectProfile) -> None:
@@ -167,9 +153,7 @@ def _detect_node(root: Path, profile: ProjectProfile) -> None:
         profile.test_runners.append(_node_test_runner(keys))
         profile.test_commands.append(CommandSpec(argv=[manager, "test"], purpose="test"))
     if isinstance(scripts, dict) and "build" in scripts:
-        profile.baseline_commands.append(
-            CommandSpec(argv=[manager, "run", "build"], purpose="build")
-        )
+        profile.baseline_commands.append(CommandSpec(argv=[manager, "run", "build"], purpose="build"))
 
 
 def _node_test_runner(keys: set[str]) -> str:
@@ -192,12 +176,8 @@ def _detect_rust(root: Path, profile: ProjectProfile) -> None:
         "CARGO_HOME": "/workspace/.reproforge/runtime/cargo-home",
         "CARGO_TARGET_DIR": "/workspace/.reproforge/runtime/cargo-target",
     }
-    profile.baseline_commands.append(
-        CommandSpec(argv=["cargo", "check", "--all-targets"], env=cargo_env, purpose="build")
-    )
-    profile.test_commands.append(
-        CommandSpec(argv=["cargo", "test", "--all-targets"], env=cargo_env, purpose="test")
-    )
+    profile.baseline_commands.append(CommandSpec(argv=["cargo", "check", "--all-targets"], env=cargo_env, purpose="build"))
+    profile.test_commands.append(CommandSpec(argv=["cargo", "test", "--all-targets"], env=cargo_env, purpose="test"))
 
 
 def _detect_go(root: Path, profile: ProjectProfile) -> None:
@@ -213,12 +193,8 @@ def _detect_go(root: Path, profile: ProjectProfile) -> None:
         "GOMODCACHE": "/workspace/.reproforge/runtime/go-mod",
         "GOCACHE": "/workspace/.reproforge/runtime/go-build",
     }
-    profile.setup_commands.append(
-        CommandSpec(argv=["go", "mod", "download"], env=go_env, purpose="setup")
-    )
-    profile.test_commands.append(
-        CommandSpec(argv=["go", "test", "./..."], env=go_env, purpose="test")
-    )
+    profile.setup_commands.append(CommandSpec(argv=["go", "mod", "download"], env=go_env, purpose="setup"))
+    profile.test_commands.append(CommandSpec(argv=["go", "test", "./..."], env=go_env, purpose="test"))
 
 
 def _detect_services(root: Path, profile: ProjectProfile) -> None:
