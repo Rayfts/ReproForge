@@ -36,7 +36,13 @@ class GitRepository:
         return (await _run(["git", "rev-parse", "HEAD"], cwd=self.path)).strip()
 
     async def status_porcelain(self) -> str:
-        return await _run(["git", "status", "--porcelain=v1", "--untracked-files=all"], cwd=self.path)
+        output = await _run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=self.path,
+        )
+        return "\n".join(
+            line for line in output.splitlines() if not _is_reproforge_artifact(line[3:])
+        )
 
     async def diff(self) -> str:
         tracked = await _run(["git", "diff", "--binary", "HEAD"], cwd=self.path)
@@ -45,6 +51,8 @@ class GitRepository:
         )
         chunks = [tracked]
         for name in [line for line in untracked_names.splitlines() if line]:
+            if _is_reproforge_artifact(name):
+                continue
             try:
                 patch = await _run(
                     ["git", "diff", "--no-index", "--binary", "/dev/null", name],
@@ -55,6 +63,11 @@ class GitRepository:
                 continue
             chunks.append(patch)
         return "\n".join(chunk for chunk in chunks if chunk)
+
+
+def _is_reproforge_artifact(path: str) -> bool:
+    normalized = path.replace("\\", "/").lstrip("./")
+    return normalized == ".reproforge" or normalized.startswith(".reproforge/")
 
 
 async def _run(
