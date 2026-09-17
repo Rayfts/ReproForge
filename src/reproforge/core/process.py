@@ -32,9 +32,7 @@ async def run_process(
     )
     timed_out = False
     try:
-        stdout_b, stderr_b = await asyncio.wait_for(
-            proc.communicate(stdin), timeout=command.timeout_seconds
-        )
+        stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(stdin), timeout=command.timeout_seconds)
     except TimeoutError:
         timed_out = True
         proc.kill()
@@ -52,9 +50,7 @@ async def run_process(
     )
 
 
-async def stream_process(
-    argv: list[str], *, cwd: Path, stdin_text: str | None = None
-) -> AsyncIterator[StreamLine]:
+async def stream_process(argv: list[str], *, cwd: Path, stdin_text: str | None = None) -> AsyncIterator[StreamLine]:
     proc = await asyncio.create_subprocess_exec(
         *argv,
         cwd=cwd,
