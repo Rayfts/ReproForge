@@ -5,7 +5,15 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from reproforge.core.config import ReproForgeConfig
-from reproforge.core.models import AttemptRecord, CommandSpec, ReproductionReport, ReproductionRequest, RunStatus, utcnow
+from reproforge.core.models import (
+    AttemptRecord,
+    CommandResult,
+    CommandSpec,
+    ReproductionReport,
+    ReproductionRequest,
+    RunStatus,
+    utcnow,
+)
 from reproforge.environments.planner import baseline_plan, setup_plan, test_plan
 from reproforge.minimization.ddmin import ddmin
 from reproforge.repository.analyzer import inspect_repository
@@ -66,8 +74,8 @@ class ReproductionEngine:
             write_report_bundle(workspace, report, secret_values=secret_values)
             return report
 
-        setup_results = []
-        baseline_results = []
+        setup_results: list[CommandResult] = []
+        baseline_results: list[CommandResult] = []
         attempts: list[AttemptRecord] = []
         harness_interpretation: str | None = None
         generated_regression_test: str | None = None
