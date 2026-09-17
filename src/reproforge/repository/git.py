@@ -44,15 +44,11 @@ class GitRepository:
             ["git", "status", "--porcelain=v1", "--untracked-files=all"],
             cwd=self.path,
         )
-        return "\n".join(
-            line for line in output.splitlines() if not _is_reproforge_artifact(line[3:])
-        )
+        return "\n".join(line for line in output.splitlines() if not _is_reproforge_artifact(line[3:]))
 
     async def diff(self) -> str:
         tracked = await _run(["git", "diff", "--binary", "HEAD"], cwd=self.path)
-        untracked_names = await _run(
-            ["git", "ls-files", "--others", "--exclude-standard"], cwd=self.path
-        )
+        untracked_names = await _run(["git", "ls-files", "--others", "--exclude-standard"], cwd=self.path)
         chunks = [tracked]
         for name in [line for line in untracked_names.splitlines() if line]:
             if _is_reproforge_artifact(name):
@@ -74,9 +70,7 @@ def _is_reproforge_artifact(path: str) -> bool:
     return normalized == ".reproforge" or normalized.startswith(".reproforge/")
 
 
-async def _run(
-    argv: list[str], *, cwd: Path, allowed: tuple[int, ...] = (0,)
-) -> str:
+async def _run(argv: list[str], *, cwd: Path, allowed: tuple[int, ...] = (0,)) -> str:
     proc = await asyncio.create_subprocess_exec(
         *argv,
         cwd=cwd,
@@ -85,8 +79,5 @@ async def _run(
     )
     stdout, stderr = await proc.communicate()
     if proc.returncode not in allowed:
-        raise GitError(
-            f"command failed ({proc.returncode}): {' '.join(argv)}\n"
-            f"{stderr.decode('utf-8', errors='replace')[:2000]}"
-        )
+        raise GitError(f"command failed ({proc.returncode}): {' '.join(argv)}\n{stderr.decode('utf-8', errors='replace')[:2000]}")
     return stdout.decode("utf-8", errors="replace")
