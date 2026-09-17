@@ -75,8 +75,7 @@ class RunStore:
     def recent(self, limit: int = 20) -> list[StoredRun]:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT run_id, path, status, created_at, updated_at FROM runs "
-                "ORDER BY updated_at DESC LIMIT ?",
+                "SELECT run_id, path, status, created_at, updated_at FROM runs ORDER BY updated_at DESC LIMIT ?",
                 (limit,),
             ).fetchall()
         return [

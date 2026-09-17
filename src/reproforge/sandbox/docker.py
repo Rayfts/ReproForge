@@ -55,10 +55,7 @@ class DockerSession:
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
-            raise SandboxError(
-                "failed to start Docker sandbox: "
-                + stderr.decode("utf-8", errors="replace")[:2000]
-            )
+            raise SandboxError("failed to start Docker sandbox: " + stderr.decode("utf-8", errors="replace")[:2000])
         if not stdout.strip():
             raise SandboxError("Docker did not return a container id")
         self._started = True
@@ -116,9 +113,7 @@ class DockerSandbox(SandboxBackend):
         environment: dict[str, str] | None = None,
     ) -> DockerSession:
         if not await self.available():
-            raise SandboxError(
-                "Docker is not available; ReproForge will not execute untrusted code on the host"
-            )
+            raise SandboxError("Docker is not available; ReproForge will not execute untrusted code on the host")
         selected_image = image or self.config.image
         if selected_image is None:
             raise SandboxError("no Docker image was selected for this project")
@@ -138,9 +133,7 @@ class DockerSandbox(SandboxBackend):
         environment: dict[str, str] | None = None,
     ) -> CommandResult:
         if not await self.available():
-            raise SandboxError(
-                "Docker is not available; ReproForge will not execute untrusted code on the host"
-            )
+            raise SandboxError("Docker is not available; ReproForge will not execute untrusted code on the host")
         workspace = workspace.resolve()
         selected_image = image or self.config.image
         if selected_image is None:
@@ -260,9 +253,7 @@ async def _capture(argv: list[str], command: CommandSpec) -> CommandResult:
     )
     timed_out = False
     try:
-        stdout_b, stderr_b = await asyncio.wait_for(
-            proc.communicate(), timeout=command.timeout_seconds
-        )
+        stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=command.timeout_seconds)
     except TimeoutError:
         timed_out = True
         proc.kill()

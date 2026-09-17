@@ -173,9 +173,7 @@ _CAPABILITIES: dict[str, tuple[CapabilityReport, str | None, Builder | None]] = 
             structured_output=True,
             supports_resume=True,
             supports_mcp=True,
-            evidence_urls=[
-                "https://github.com/anomalyco/opencode/blob/dev/packages/opencode/src/cli/cmd/run.ts"
-            ],
+            evidence_urls=["https://github.com/anomalyco/opencode/blob/dev/packages/opencode/src/cli/cmd/run.ts"],
         ),
         "opencode",
         _opencode,
@@ -208,9 +206,7 @@ _CAPABILITIES: dict[str, tuple[CapabilityReport, str | None, Builder | None]] = 
             integration_modes=[IntegrationMode.HEADLESS, IntegrationMode.JSON_STREAM],
             structured_output=True,
             supports_mcp=True,
-            evidence_urls=[
-                "https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md"
-            ],
+            evidence_urls=["https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md"],
         ),
         "gemini",
         _gemini,
@@ -242,9 +238,7 @@ _CAPABILITIES: dict[str, tuple[CapabilityReport, str | None, Builder | None]] = 
             structured_output=True,
             supports_resume=True,
             supports_mcp=True,
-            evidence_urls=[
-                "https://github.com/aaif-goose/goose/blob/main/documentation/docs/guides/running-tasks.md"
-            ],
+            evidence_urls=["https://github.com/aaif-goose/goose/blob/main/documentation/docs/guides/running-tasks.md"],
         ),
         "goose",
         _goose,
@@ -257,9 +251,7 @@ _CAPABILITIES: dict[str, tuple[CapabilityReport, str | None, Builder | None]] = 
             integration_modes=[IntegrationMode.HEADLESS, IntegrationMode.JSON_STREAM],
             structured_output=True,
             supports_mcp=True,
-            evidence_urls=[
-                "https://github.com/cline/cline/blob/main/apps/cli/README.md"
-            ],
+            evidence_urls=["https://github.com/cline/cline/blob/main/apps/cli/README.md"],
         ),
         "cline",
         _cline,
@@ -277,9 +269,7 @@ _CAPABILITIES: dict[str, tuple[CapabilityReport, str | None, Builder | None]] = 
                 "The official README states the Roo Code extension was shut down on May 15, 2026.",
                 "ReproForge does not invent a current CLI or headless mode for Roo Code.",
             ],
-            evidence_urls=[
-                "https://github.com/RooCodeInc/Roo-Code/blob/main/README.md"
-            ],
+            evidence_urls=["https://github.com/RooCodeInc/Roo-Code/blob/main/README.md"],
         ),
         None,
         None,

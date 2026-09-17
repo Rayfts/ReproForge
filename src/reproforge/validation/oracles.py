@@ -23,9 +23,7 @@ _PATTERNS: tuple[tuple[FailureKind, re.Pattern[str]], ...] = (
     (FailureKind.RUNTIME_ERROR, re.compile(r"(?im)\bruntimeerror\b|\bruntime error\b")),
 )
 
-_BUILD_NOISE = re.compile(
-    r"(?im)^\s*(?:Compiling|Checking)\s+.+$|^\s*Finished `[^`]+` profile .+$"
-)
+_BUILD_NOISE = re.compile(r"(?im)^\s*(?:Compiling|Checking)\s+.+$|^\s*Finished `[^`]+` profile .+$")
 _NODE_DURATION = re.compile(r"(?im)^(\s*#?\s*duration_ms[: ]+)\d+(?:\.\d+)?\s*$")
 
 
@@ -87,10 +85,7 @@ def classify_attempts(
         reproduced
         and len(reproduced) == len(attempts)
         and most_common
-        and all(
-            any(signal.fingerprint == most_common for signal in attempt.signals)
-            for attempt in reproduced
-        )
+        and all(any(signal.fingerprint == most_common for signal in attempt.signals) for attempt in reproduced)
     )
     primary = _primary_signal(reproduced, most_common)
 
