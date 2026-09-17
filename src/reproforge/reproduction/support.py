@@ -35,6 +35,15 @@ def command_succeeded(result: CommandResult) -> bool:
     return not result.timed_out and result.exit_code == 0
 
 
+def runtime_policy_error(config: ReproForgeConfig) -> str | None:
+    if config.security.allowed_network_domains:
+        return (
+            "The Docker backend cannot enforce allowed_network_domains yet; "
+            "refusing to execute with a domain allowlist configured."
+        )
+    return None
+
+
 async def safe_revision(repository: GitRepository) -> str | None:
     try:
         return await repository.revision()
