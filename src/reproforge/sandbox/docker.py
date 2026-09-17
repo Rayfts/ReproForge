@@ -7,6 +7,7 @@ import shutil
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from types import TracebackType
 
 from reproforge.core.config import SandboxConfig
 from reproforge.core.models import CommandResult, CommandSpec
@@ -35,7 +36,13 @@ class DockerSession:
         await self.start()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        del exc_type, exc, tb
         await self.close()
 
     async def start(self) -> None:
@@ -160,16 +167,13 @@ class DockerSandbox(SandboxBackend):
         image: str | None = None,
         environment: dict[str, str] | None = None,
     ) -> CommandResult:
-        if not await self.available():
-            raise SandboxError("Docker is not available; ReproForge will not execute untrusted code on the host")
-        workspace = workspace.resolve()
-        selected_image = image or self.config.image
-        if selected_image is None:
-            raise SandboxError("no Docker image was selected for this project")
-        env = dict(environment or {})
-        env.update(command.env)
-        argv = self._docker_argv(command, workspace, selected_image, env)
-        return await _capture(argv, command)
+        session = await self.open_session(
+            workspace=workspace.resolve(),
+            image=image,
+            environment=environment,
+        )
+        async with session:
+            return await session.run(command)
 
     def _container_argv(
         self,
