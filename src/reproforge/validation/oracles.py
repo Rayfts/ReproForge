@@ -23,6 +23,11 @@ _PATTERNS: tuple[tuple[FailureKind, re.Pattern[str]], ...] = (
     (FailureKind.RUNTIME_ERROR, re.compile(r"(?im)\bruntimeerror\b|\bruntime error\b")),
 )
 
+_BUILD_NOISE = re.compile(
+    r"(?im)^\s*(?:Compiling|Checking)\s+.+$|^\s*Finished `[^`]+` profile .+$"
+)
+_NODE_DURATION = re.compile(r"(?im)^(\s*#?\s*duration_ms[: ]+)\d+(?:\.\d+)?\s*$")
+
 
 def inspect_command(result: CommandResult, *, command_index: int) -> list[FailureSignal]:
     """Extract measurable failure signals from a command result."""
@@ -43,13 +48,19 @@ def inspect_command(result: CommandResult, *, command_index: int) -> list[Failur
 
     combined = f"{result.stdout}\n{result.stderr}".strip()
     kind = _classify_output(combined)
+    signature = _normalize(combined)
     return [
         FailureSignal(
             kind=kind,
             summary=f"{kind.value}: {' '.join(result.command.argv)} exited with code {result.exit_code}",
             source=EvidenceSource.OBSERVED,
             command_index=command_index,
-            fingerprint=_fingerprint(kind.value, _normalize(combined)),
+            fingerprint=_fingerprint(
+                kind.value,
+                str(result.exit_code),
+                "\0".join(result.command.argv),
+                signature,
+            ),
             details={"exit_code": result.exit_code, "argv": result.command.argv},
         )
     ]
@@ -102,10 +113,14 @@ def _classify_output(text: str) -> FailureKind:
 
 
 def _normalize(text: str) -> str:
+    text = re.sub(r"\x1b\[[0-9;]*m", "", text)
     text = re.sub(r"0x[0-9a-fA-F]+", "0xADDR", text)
     text = re.sub(r"\b\d+(?:\.\d+)?(?:ms|s|sec|seconds)\b", "<TIME>", text)
+    text = _NODE_DURATION.sub(r"\1<TIME>", text)
+    text = _BUILD_NOISE.sub("", text)
     text = re.sub(r"(?m)^\s*at\s+.+:\d+(?::\d+)?\s*$", "at <FRAME>", text)
-    return "\n".join(line.rstrip() for line in text.splitlines())[:16_384]
+    lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    return "\n".join(lines)[:16_384]
 
 
 def _fingerprint(*parts: str) -> str:
