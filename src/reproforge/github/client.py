@@ -59,9 +59,15 @@ class GitHubClient:
                 client.get(f"/repos/{ref.owner}/{ref.repo}"),
             )
         if issue_response.status_code != 200:
-            raise GitHubError(f"GitHub issue lookup failed with HTTP {issue_response.status_code}: {_safe_message(issue_response)}")
+            raise GitHubError(
+                f"GitHub issue lookup failed with HTTP {issue_response.status_code}: "
+                f"{_safe_message(issue_response)}"
+            )
         if repo_response.status_code != 200:
-            raise GitHubError(f"GitHub repository lookup failed with HTTP {repo_response.status_code}: {_safe_message(repo_response)}")
+            raise GitHubError(
+                f"GitHub repository lookup failed with HTTP {repo_response.status_code}: "
+                f"{_safe_message(repo_response)}"
+            )
         issue = issue_response.json()
         repo = repo_response.json()
         if "pull_request" in issue:
