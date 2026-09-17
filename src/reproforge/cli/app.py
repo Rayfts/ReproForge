@@ -268,9 +268,7 @@ async def _resume(*, run_id: str, harness: str | None, image: str | None) -> Non
         image=image,
         harness_image=None,
     )
-    request = previous.request.model_copy(
-        update={"harness": harness or previous.request.harness}
-    )
+    request = previous.request.model_copy(update={"harness": harness or previous.request.harness})
     report = await ReproductionEngine(cfg).run(request, workspace=workspace)
     next_archive = _archive_run(workspace, report)
     _store().upsert(report.run_id, next_archive, report.status.value)
