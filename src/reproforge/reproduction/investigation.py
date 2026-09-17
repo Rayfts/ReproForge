@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import Field
 
 from reproforge.core.config import ReproForgeConfig
-from reproforge.core.models import CommandSpec, ReproductionRequest, StrictModel
+from reproforge.core.models import CommandResult, CommandSpec, ReproductionRequest, StrictModel
 from reproforge.harnesses import capability_catalog, create_adapter
 from reproforge.harnesses.base import HarnessEventKind, HarnessRunRequest
 from reproforge.harnesses.runtime import DockerHarnessRuntime
@@ -28,10 +28,14 @@ async def investigate_harness(
     request: ReproductionRequest,
     workspace: Path,
     inspection: RepositoryInspection,
-) -> tuple[HarnessPlan, str | None, list[str]]:
+) -> tuple[HarnessPlan, str | None, list[str], list[CommandResult]]:
+    capability = next(item for item in capability_catalog() if item.id == harness_id)
+    if not capability.launchable:
+        return HarnessPlan(), None, list(capability.limitations), []
+
     image = config.harness.image or config.sandbox.image
     if image is None:
-        return HarnessPlan(), None, ["Harness requested but no harness image is configured."]
+        return HarnessPlan(), None, ["Harness requested but no harness image is configured."], []
 
     plan_path = workspace / ".reproforge" / "harness-plan.json"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
@@ -44,16 +48,12 @@ async def investigate_harness(
     )
     messages: list[str] = []
     caveats: list[str] = []
+    runtime = DockerHarnessRuntime(
+        harness_session,
+        timeout_seconds=config.sandbox.limits.timeout_seconds,
+    )
+    adapter = create_adapter(harness_id, runtime=runtime)
     async with harness_session:
-        runtime = DockerHarnessRuntime(
-            harness_session,
-            timeout_seconds=config.sandbox.limits.timeout_seconds,
-        )
-        adapter = create_adapter(harness_id, runtime=runtime)
-        capability = next(item for item in capability_catalog() if item.id == harness_id)
-        if not capability.launchable:
-            return HarnessPlan(), None, list(capability.limitations)
-
         try:
             async for event in adapter.run(
                 HarnessRunRequest(
@@ -76,7 +76,7 @@ async def investigate_harness(
         )
         plan = HarnessPlan()
     interpretation = plan.interpretation or ("\n".join(messages[-5:]) if messages else None)
-    return plan, interpretation, caveats
+    return plan, interpretation, caveats, runtime.results
 
 
 def read_harness_plan(path: Path) -> HarnessPlan | None:
