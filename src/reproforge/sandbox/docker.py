@@ -47,7 +47,7 @@ class DockerSession:
             environment=self.environment,
             name=self.name,
         )
-        argv.extend(["sh", "-c", "while :; do sleep 3600; done"])
+        argv.extend(["sh", "-c", 'mkdir -p "$HOME" && while :; do sleep 3600; done'])
         proc = await asyncio.create_subprocess_exec(
             *argv,
             stdout=asyncio.subprocess.PIPE,
@@ -71,7 +71,35 @@ class DockerSession:
             self.backend._validate_env(key, value)
             argv.extend(["--env", f"{key}={value}"])
         argv.extend([self.name, *command.argv])
-        return await _capture(argv, command)
+        result = await _capture(argv, command)
+        if result.timed_out:
+            await self._restart_after_timeout()
+        return result
+
+    async def _restart_after_timeout(self) -> None:
+        kill = await asyncio.create_subprocess_exec(
+            "docker",
+            "kill",
+            self.name,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, kill_stderr = await kill.communicate()
+        if kill.returncode != 0:
+            await self.close()
+            raise SandboxError("failed to stop timed-out sandbox: " + kill_stderr.decode(errors="replace")[:1000])
+
+        restart = await asyncio.create_subprocess_exec(
+            "docker",
+            "start",
+            self.name,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, restart_stderr = await restart.communicate()
+        if restart.returncode != 0:
+            await self.close()
+            raise SandboxError("failed to restart sandbox after timeout: " + restart_stderr.decode(errors="replace")[:1000])
 
     async def close(self) -> None:
         if not self._started:
