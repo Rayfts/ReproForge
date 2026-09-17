@@ -14,10 +14,14 @@ def test_docker_argv_keeps_host_credentials_out(tmp_path: Path) -> None:
         {},
     )
     text = " ".join(argv)
+    mounts = [argv[index + 1] for index, value in enumerate(argv) if value == "--mount"]
 
     assert "--network none" in text
     assert "--cap-drop ALL" in text
     assert "no-new-privileges" in text
-    assert "/var/run/docker.sock" not in text
-    assert str(Path.home()) not in text
+    assert mounts == [f"type=bind,source={tmp_path.resolve()},target=/workspace"]
+    assert all("/var/run/docker.sock" not in mount for mount in mounts)
+    assert all(".ssh" not in mount for mount in mounts)
+    assert all(".aws" not in mount for mount in mounts)
+    assert all(".config/gh" not in mount for mount in mounts)
     assert "HOME=/tmp/reproforge-home" in text
