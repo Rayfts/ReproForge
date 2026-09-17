@@ -1,5 +1,7 @@
+from pathlib import Path
+
 from reproforge.core.config import ReproForgeConfig
-from reproforge.reproduction.support import runtime_policy_error
+from reproforge.reproduction.support import runtime_policy_error, workspace_policy_error
 
 
 def test_host_environment_is_not_inherited_by_default(monkeypatch) -> None:
@@ -49,3 +51,26 @@ def test_unenforced_domain_allowlist_fails_closed() -> None:
 
     assert error is not None
     assert "cannot enforce allowed_network_domains" in error
+
+
+def test_custom_forbidden_workspace_is_rejected(tmp_path: Path) -> None:
+    sensitive = tmp_path / "sensitive"
+    workspace = sensitive / "repo"
+    config = ReproForgeConfig()
+    config.security.forbidden_filesystem_paths = [str(sensitive)]
+
+    error = workspace_policy_error(config, workspace)
+
+    assert error is not None
+    assert "intersects forbidden host path" in error
+
+
+def test_default_sensitive_paths_cannot_be_removed() -> None:
+    config = ReproForgeConfig()
+    config.security.forbidden_filesystem_paths = []
+    workspace = Path.home() / ".ssh" / "example-repo"
+
+    error = workspace_policy_error(config, workspace)
+
+    assert error is not None
+    assert ".ssh" in error
