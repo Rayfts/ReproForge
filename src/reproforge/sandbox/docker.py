@@ -180,7 +180,7 @@ class DockerSandbox(SandboxBackend):
             "--workdir",
             "/workspace",
             "--mount",
-            f"type=bind,source={workspace},target=/workspace,rw",
+            f"type=bind,source={workspace},target=/workspace",
             "--tmpfs",
             "/tmp:rw,nosuid,nodev,exec,size=512m",
             "--env",
