@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import platform
 import shutil
 import uuid
@@ -188,6 +189,9 @@ class DockerSandbox(SandboxBackend):
             "--env",
             "CI=1",
         ]
+        host_user = _host_user()
+        if host_user is not None:
+            argv.extend(["--user", host_user])
         if self.config.read_only_root:
             argv.append("--read-only")
         for key, value in sorted(environment.items()):
@@ -237,6 +241,14 @@ class DockerSandbox(SandboxBackend):
             "host_home_exposed": False,
             "host_environment_inherited": False,
         }
+
+
+def _host_user() -> str | None:
+    """Match bind-mount ownership on POSIX without exposing host identity data."""
+
+    if os.name == "nt":
+        return None
+    return f"{os.getuid()}:{os.getgid()}"
 
 
 async def _capture(argv: list[str], command: CommandSpec) -> CommandResult:
