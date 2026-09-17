@@ -41,7 +41,12 @@ async def run_issue(
     issue = await client.fetch_issue(url)
     workspace = home() / "workspaces" / uuid.uuid4().hex
     console.print(f"Cloning [bold]{issue.ref.owner}/{issue.ref.repo}[/bold] into {workspace}")
-    await GitRepository.clone(issue.repository_clone_url, workspace, revision=revision)
+    await GitRepository.clone(
+        issue.repository_clone_url,
+        workspace,
+        revision=revision,
+        auth_token=client.resolved_token(),
+    )
     cfg = _configured(
         load_config(config_path, cwd=workspace),
         harness=harness,
