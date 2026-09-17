@@ -1,0 +1,64 @@
+name: Seeded reproduction
+
+on:
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "src/**"
+      - "fixture_repos/**"
+      - "pyproject.toml"
+      - ".github/workflows/seeded-reproduction.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "fixture_repos/**"
+      - "pyproject.toml"
+      - ".github/workflows/seeded-reproduction.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - fixture: python-off-by-one
+            image: python:3.12-slim
+          - fixture: typescript-parser
+            image: node:22-slim
+          - fixture: rust-panic
+            image: rust:1.89-slim
+          - fixture: go-api
+            image: golang:1.23-alpine
+          - fixture: react-render
+            image: node:22-slim
+          - fixture: http-edge
+            image: python:3.12-slim
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .
+      - run: docker pull ${{ matrix.image }}
+      - name: Reproduce seeded failure
+        run: reproforge local fixture_repos/${{ matrix.fixture }}
+      - name: Verify evidence status
+        env:
+          FIXTURE: ${{ matrix.fixture }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = Path("fixture_repos") / os.environ["FIXTURE"] / ".reproforge" / "report.json"
+          payload = json.loads(report.read_text())
+          assert payload["status"] == "reproduced", payload
+          assert payload["deterministic"] is True, payload
+          assert payload["reproduction_rate"] == 1.0, payload
+          assert payload["primary_signal"]["source"] == "observed", payload
+          PY
