@@ -182,7 +182,10 @@ class ArchivalHarnessAdapter:
 
     def build_invocation(self, request: HarnessRunRequest) -> HarnessInvocation:
         del request
-        raise RuntimeError(f"{self.id} has no current supported headless launcher; historical artifacts must be imported explicitly")
+        raise RuntimeError(
+            f"{self.id} has no current supported headless launcher; "
+            "historical artifacts must be imported explicitly"
+        )
 
     async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]:
         del request
