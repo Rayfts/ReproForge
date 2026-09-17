@@ -109,6 +109,7 @@ async def probe_version(executable: str) -> tuple[bool, str | None]:
     if path is None:
         return False, None
 
+    process: asyncio.subprocess.Process | None = None
     try:
         process = await asyncio.create_subprocess_exec(
             path,
@@ -117,7 +118,12 @@ async def probe_version(executable: str) -> tuple[bool, str | None]:
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=5)
-    except (OSError, TimeoutError):
+    except TimeoutError:
+        if process is not None:
+            process.kill()
+            await process.communicate()
+        return True, None
+    except OSError:
         return True, None
 
     text = (stdout or stderr).decode(errors="replace").strip()
@@ -189,9 +195,13 @@ class ArchivalHarnessAdapter:
 
     async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]:
         del request
+        if self._capability.launchable:
+            yield HarnessEvent(
+                kind=HarnessEventKind.ERROR,
+                harness_id=self.id,
+                payload={"reason": "archival-adapter-misconfigured"},
+            )
         raise RuntimeError(f"{self.id} is archival-only because the official project is shut down")
-        if False:  # pragma: no cover
-            yield HarnessEvent(kind=HarnessEventKind.ERROR, harness_id=self.id)
 
     async def cancel(self) -> None:
         return None
