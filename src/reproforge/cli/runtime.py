@@ -15,6 +15,7 @@ from rich.table import Table
 
 from reproforge.core.models import ReproductionReport
 from reproforge.harnesses import harness_ids
+from reproforge.reports.writer import write_report_bundle
 from reproforge.store.runs import RunStore
 
 console = Console()
@@ -41,20 +42,27 @@ def store() -> RunStore:
     return RunStore(home() / "state")
 
 
-def archive_run(workspace: Path, report: ReproductionReport) -> Path:
+def archive_run(
+    workspace: Path,
+    report: ReproductionReport,
+    *,
+    secret_values: tuple[str, ...] = (),
+) -> Path:
     source = workspace / ".reproforge"
     archive = home() / "runs" / report.run_id
     if archive.exists():
         shutil.rmtree(archive)
     archive.mkdir(parents=True)
-    for name in _EVIDENCE_FILES:
-        path = source / name
-        if path.is_file():
-            shutil.copy2(path, archive / name)
-    for name in _EVIDENCE_DIRS:
-        path = source / name
-        if path.is_dir():
-            shutil.copytree(path, archive / name)
+    _copy_evidence(source, archive)
+
+    if not (archive / "report.json").is_file():
+        staging_root = home() / "staging" / report.run_id
+        if staging_root.exists():
+            shutil.rmtree(staging_root)
+        staging_bundle = write_report_bundle(staging_root, report, secret_values=secret_values)
+        _copy_evidence(staging_bundle, archive)
+        shutil.rmtree(staging_root, ignore_errors=True)
+
     (archive / "metadata.json").write_text(
         json.dumps(
             {
@@ -69,6 +77,18 @@ def archive_run(workspace: Path, report: ReproductionReport) -> Path:
         encoding="utf-8",
     )
     return archive
+
+
+def _copy_evidence(source: Path, archive: Path) -> None:
+    for name in _EVIDENCE_FILES:
+        path = source / name
+        if path.is_file():
+            shutil.copy2(path, archive / name)
+    for name in _EVIDENCE_DIRS:
+        path = source / name
+        destination = archive / name
+        if path.is_dir() and not destination.exists():
+            shutil.copytree(path, destination)
 
 
 def load_archived_run(run_id: str) -> tuple[ReproductionReport, Path]:
