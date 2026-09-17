@@ -16,7 +16,7 @@ Assume a repository, dependency, test, build script, issue body, fixture, genera
 
 ### Host/control plane
 
-The control plane may hold GitHub credentials for issue metadata or comments. Those credentials are not inherited by sandbox processes. Host-side Git may use the operator's configured credential helper to clone a private repository, but the resulting credential material is not mounted into the execution container.
+The control plane may hold GitHub credentials for issue metadata, private-repository cloning, or comments. Those credentials are not inherited by sandbox processes. Authentication used for a host-side clone must be scoped to that Git process and must not be written into the cloned repository or mounted into the execution container.
 
 ### Project sandbox
 
@@ -28,15 +28,17 @@ The workspace is not a confidentiality boundary. Malicious code can read and mod
 
 Harnesses run in a separate disposable container that shares the workspace. This limits host exposure, not mutual trust between the harness and target repository. The target repository may attempt to influence the agent through files, instructions, or tool output.
 
-## Secrets
+## Environment and secrets
 
-No host environment is inherited. Only `environment`, `security.allowed_environment`, and `security.allowed_secrets` values are injected.
+No ambient host environment is inherited. Repository configuration may *request* names through `security.allowed_environment` and `security.allowed_secrets`, but it cannot grant itself access to host values. The operator must separately grant requested names through `REPROFORGE_ENV_GRANTS` and `REPROFORGE_SECRET_GRANTS`.
 
-**Important:** allowlisting a secret gives untrusted sandbox processes access to that value. ReproForge redacts known values from its reports, but redaction cannot prevent an attacker from encoding, transforming, or exfiltrating a secret before it reaches the reporter. Do not inject a credential unless it is necessary, narrowly scoped, short-lived, and its exposure to the target repository is acceptable.
+`GITHUB_TOKEN` and `GH_TOKEN` are control-plane credentials and are never injected into a sandbox, even if both repository configuration and operator grants name them. Literal values under the repository's `environment` mapping are passed because they originate from the repository configuration itself rather than the host environment.
+
+**Important:** granting any other secret gives untrusted sandbox processes access to that value. ReproForge redacts known secret values from evidence output, but redaction cannot prevent an attacker from encoding, transforming, or exfiltrating a secret before it reaches the reporter. Do not inject a credential unless it is necessary, narrowly scoped, short-lived, and its exposure to the target repository is acceptable.
 
 ## Network
 
-`none` is the default. `bridge` is an explicit opt-in and is currently coarse-grained: `allowed_network_domains` is configuration metadata for a future domain-enforcing backend and does not create a Docker egress firewall today. Documentation and UI must not imply domain-level enforcement until it exists.
+`none` is the default. `bridge` is an explicit opt-in and is coarse-grained. Docker cannot enforce `allowed_network_domains`; if a domain allowlist is configured, ReproForge fails closed before repository code executes rather than pretending that domain-level filtering is active.
 
 ## Docker daemon
 
@@ -55,5 +57,5 @@ Agent prose is never an oracle. Validation derives failure signals from independ
 - a kernel/VM boundary against a Docker/container escape vulnerability;
 - domain-level egress filtering;
 - hostile multi-tenant execution on the same daemon;
-- protecting an explicitly injected secret from code in the sandbox;
+- protecting an explicitly injected non-control-plane secret from code in the sandbox;
 - automatic semantic proof that a failing test exactly matches the user's issue.
