@@ -1,36 +1,48 @@
 # GitHub integration
 
-The initial CLI can ingest GitHub issue URLs and can post comments through the control-plane GitHub client when explicitly invoked by future automation. GitHub credentials are not automatically passed into target-repository containers.
+ReproForge can ingest GitHub issue URLs, clone private GitHub repositories using host-only Git authentication, archive evidence, and optionally post a concise evidence comment. GitHub credentials stay in the control plane and are never part of the default sandbox environment.
 
-## Intended triggers
+## Included triggers
 
-ReproForge is designed to support:
+`.github/workflows/reproforge-dispatch.yml` supports:
 
-- `/repro` issue comments;
-- issue labels;
-- `workflow_dispatch`;
-- manual CLI runs.
+- manual `workflow_dispatch` runs;
+- an issue labeled `repro`;
+- a maintainer/collaborator issue comment equal to `/repro` or beginning with `/repro `.
 
-The repository ships a workflow-dispatch example before enabling automatic issue-comment execution. Automatically running arbitrary issue content on privileged self-hosted runners requires a deliberate deployment threat model.
+Pull-request comments are excluded. Comment-triggered runs require the comment author's GitHub association to be `OWNER`, `MEMBER`, or `COLLABORATOR`, which prevents arbitrary public commenters from consuming privileged Actions capacity.
+
+The repository ships `.reproforge.yml` as a working self-reproduction example. Other projects should provide their own runtime image/setup/test configuration and can adapt the workflow when ReproForge is consumed as an external action or installed package.
 
 ## Result comment shape
 
-A future GitHub App/Action should post concise evidence only:
+`reproforge issue <url> --post-comment` posts concise evidence only:
 
 - status and confidence;
-- failing command/test;
-- environment/revision;
+- failing command when available;
+- environment image/revision;
 - reproduction rate and determinism;
-- artifact link;
+- observed signal;
 - proposed regression test;
-- caveats.
+- up to three caveats;
+- run ID for the archived evidence bundle.
 
-Do not post verbose agent narration.
+Verbose agent narration is intentionally excluded.
 
 ## Permissions
 
-Use least privilege. Read-only repository/issues permissions are sufficient for ingestion. Commenting requires issue write permission. Generated patches must remain artifacts until a maintainer explicitly approves a branch/push workflow.
+Issue ingestion and private cloning use control-plane credentials. Posting evidence requires `issues: write`; source checkout requires `contents: read`. The included workflow grants only those permissions. Generated patches remain evidence artifacts and are never pushed automatically.
 
-## Tokens
+## Private repository cloning
 
-`GITHUB_TOKEN` or `GH_TOKEN` may be used by the control plane for GitHub API calls. They are not part of the default sandbox environment. Never add them to `security.allowed_secrets` merely to make repository setup easier.
+For `https://github.com/...` clones, ReproForge can use the resolved `GITHUB_TOKEN` or `GH_TOKEN` only in the host Git process through ephemeral Git configuration environment variables. The token is not embedded in the clone URL, written to the repository, or mounted into Docker.
+
+## Sandbox secret boundary
+
+Repository configuration cannot grant itself access to host environment variables. Names requested by `security.allowed_environment` and `security.allowed_secrets` must also be explicitly granted by the operator through `REPROFORGE_ENV_GRANTS` and `REPROFORGE_SECRET_GRANTS`.
+
+`GITHUB_TOKEN` and `GH_TOKEN` are always blocked from sandbox injection, even if requested and operator-granted. Never weaken this boundary merely to make repository setup easier.
+
+## GitHub App direction
+
+The workflow is the initial automation surface. A future GitHub App can use the same CLI/report contracts while replacing workflow credentials and dispatch logic with installation tokens, queues, and hosted sandbox workers. The App should preserve the same least-privilege and no-auto-push rules.
