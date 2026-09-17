@@ -47,6 +47,11 @@ def issue_command(
         help="Docker image containing the selected harness binary.",
     ),
     config: Path | None = typer.Option(None, "--config", exists=True, dir_okay=False),
+    post_comment: bool = typer.Option(
+        False,
+        "--post-comment",
+        help="Post a concise evidence summary back to the GitHub issue.",
+    ),
 ) -> None:
     """Reproduce a GitHub issue inside a persistent disposable workspace."""
 
@@ -58,6 +63,7 @@ def issue_command(
             image=image,
             harness_image=harness_image,
             config_path=config,
+            post_comment=post_comment,
         )
     )
 
