@@ -59,10 +59,9 @@ Then run:
 reproforge local .
 reproforge issue https://github.com/org/project/issues/123
 reproforge issue https://github.com/org/project/issues/123 --harness codex
-reproforge issue https://github.com/org/project/issues/123 --post-comment
 ```
 
-A completed workspace contains the evidence bundle:
+A completed workspace contains the current evidence bundle:
 
 ```text
 .reproforge/
@@ -83,7 +82,7 @@ Completed runs are also archived under `REPROFORGE_HOME` (default `~/.reproforge
 ## CLI
 
 ```text
-reproforge issue <github-url> [--harness ID] [--revision REV] [--image IMAGE] [--post-comment]
+reproforge issue <github-url> [--harness ID] [--revision REV] [--image IMAGE]
 reproforge local <path> [--harness ID] [--image IMAGE]
 reproforge resume <run-id>
 reproforge inspect <run-id> [--json]
@@ -128,6 +127,7 @@ Repositories and issue text are untrusted input. Default execution properties in
 
 - Docker-only execution; no fallback to host execution;
 - no host Docker socket, SSH directory, cloud config, or arbitrary host filesystem mounts;
+- rejection before inspection/mount if a workspace intersects `~/.ssh`, `~/.aws`, `~/.config/gh`, `/var/run/docker.sock`, or an additional configured forbidden path;
 - isolated `HOME` on tmpfs;
 - `--cap-drop ALL` and `no-new-privileges`;
 - read-only container root by default;
@@ -138,6 +138,8 @@ Repositories and issue text are untrusted input. Default execution properties in
 - `GITHUB_TOKEN` and `GH_TOKEN` are never sandbox-injectable;
 - domain allowlists fail closed until a backend can actually enforce them;
 - redaction of configured secret values from evidence output.
+
+The built-in sensitive workspace paths cannot be removed by repository configuration; repositories may only add further forbidden paths. A blocked local run does not write `.reproforge` into the rejected workspace—its minimal failure record is archived under `REPROFORGE_HOME` instead.
 
 Repository configuration may request host variable names, but the operator must separately grant them with `REPROFORGE_ENV_GRANTS` or `REPROFORGE_SECRET_GRANTS` (comma-separated names). Allowing any non-control-plane secret or enabling network access is an explicit trust decision: code inside the sandbox can potentially read an injected secret and send it over permitted network access. Read [the threat model](docs/threat-model.md) before using secrets with untrusted repositories.
 
