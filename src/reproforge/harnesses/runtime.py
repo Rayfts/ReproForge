@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import AsyncIterator
 
-from reproforge.core.models import CommandSpec
+from reproforge.core.models import CommandResult, CommandSpec
 from reproforge.harnesses.base import (
     HarnessEvent,
     HarnessEventKind,
@@ -14,11 +14,16 @@ from reproforge.sandbox.docker import DockerSession
 
 
 class DockerHarnessRuntime(HarnessRuntime):
-    """Run a harness inside a disposable DockerSession."""
+    """Run a harness inside a disposable DockerSession and retain command evidence."""
 
     def __init__(self, session: DockerSession, *, timeout_seconds: int = 900) -> None:
         self._session = session
         self._timeout_seconds = timeout_seconds
+        self._results: list[CommandResult] = []
+
+    @property
+    def results(self) -> list[CommandResult]:
+        return list(self._results)
 
     async def stream(
         self,
@@ -43,6 +48,7 @@ class DockerHarnessRuntime(HarnessRuntime):
                 purpose=f"harness:{harness_id}",
             )
         )
+        self._results.append(result)
 
         for line in result.stdout.splitlines():
             yield _stdout_event(harness_id, line, structured=invocation.structured_output)
