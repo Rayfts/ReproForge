@@ -51,6 +51,13 @@ async def safe_revision(repository: GitRepository) -> str | None:
         return None
 
 
+async def safe_diff(repository: GitRepository) -> str | None:
+    try:
+        return await repository.diff()
+    except Exception:
+        return None
+
+
 def environment_snapshot(
     config: ReproForgeConfig,
     inspection: RepositoryInspection,
