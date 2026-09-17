@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
 
 from reproforge.core.models import AttemptRecord, CommandResult, ReproductionReport
@@ -137,7 +138,11 @@ def _write_commands(
     path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
 
 
-def _write_logs(directory: Path, report: ReproductionReport, secret_values: tuple[str, ...]) -> None:
+def _write_logs(
+    directory: Path,
+    report: ReproductionReport,
+    secret_values: tuple[str, ...],
+) -> None:
     for index, (metadata, result) in enumerate(_iter_commands(report), start=1):
         phase = str(metadata["phase"])
         attempt = metadata.get("attempt")
@@ -153,10 +158,19 @@ def _write_logs(directory: Path, report: ReproductionReport, secret_values: tupl
             )
 
 
-def _write_reproduction(directory: Path, report: ReproductionReport, secret_values: tuple[str, ...]) -> None:
+def _write_reproduction(
+    directory: Path,
+    report: ReproductionReport,
+    secret_values: tuple[str, ...],
+) -> None:
     attempts = report.attempts
-    source_attempt = next((attempt for attempt in attempts if attempt.reproduced), attempts[0] if attempts else None)
-    commands = [] if source_attempt is None else [result.command.model_dump(mode="json") for result in source_attempt.commands]
+    fallback = attempts[0] if attempts else None
+    source_attempt = next((attempt for attempt in attempts if attempt.reproduced), fallback)
+    commands = (
+        []
+        if source_attempt is None
+        else [result.command.model_dump(mode="json") for result in source_attempt.commands]
+    )
     _write_json(directory / "commands.json", commands, secret_values)
     if report.minimized_reproduction:
         (directory / "minimized.txt").write_text(
@@ -165,7 +179,11 @@ def _write_reproduction(directory: Path, report: ReproductionReport, secret_valu
         )
 
 
-def _write_regression_test(directory: Path, report: ReproductionReport, secret_values: tuple[str, ...]) -> None:
+def _write_regression_test(
+    directory: Path,
+    report: ReproductionReport,
+    secret_values: tuple[str, ...],
+) -> None:
     if not report.generated_regression_test:
         return
     (directory / "proposal.md").write_text(
@@ -174,7 +192,9 @@ def _write_regression_test(directory: Path, report: ReproductionReport, secret_v
     )
 
 
-def _iter_commands(report: ReproductionReport):
+def _iter_commands(
+    report: ReproductionReport,
+) -> Iterator[tuple[dict[str, object], CommandResult]]:
     for phase, commands in (
         ("setup", report.setup_commands),
         ("baseline", report.baseline_commands),
