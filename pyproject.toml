@@ -54,6 +54,9 @@ packages = ["src/reproforge"]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+  "integration: tests that require a working Docker daemon",
+]
 
 [tool.ruff]
 target-version = "py312"
