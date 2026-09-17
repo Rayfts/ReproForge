@@ -69,6 +69,10 @@ def render_markdown(report: ReproductionReport) -> str:
     else:
         lines.append("- No separate baseline build/check command was detected.")
 
+    if report.harness_commands:
+        lines.extend(["", "## Harness execution", ""])
+        lines.extend(_command_line(result) for result in report.harness_commands)
+
     if primary:
         lines.extend(
             [
@@ -198,6 +202,7 @@ def _iter_commands(
     for phase, commands in (
         ("setup", report.setup_commands),
         ("baseline", report.baseline_commands),
+        ("harness", report.harness_commands),
     ):
         for command in commands:
             yield {"phase": phase}, command
