@@ -30,6 +30,7 @@ uv run pytest -m integration
 5. Keep `report.json` backward-compatible within its schema version. A breaking change requires a new version and migration notes.
 6. Generated patches are artifacts. Do not push them automatically.
 7. Add tests for security-boundary changes and new detection rules.
+8. Keep every Python source and test file at **300 physical lines or fewer**. Split modules by responsibility rather than compressing or hiding logic to satisfy the limit; `tests/test_source_layout.py` enforces it.
 
 ## Harness changes
 
