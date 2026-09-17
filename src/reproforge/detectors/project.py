@@ -6,6 +6,8 @@ from pathlib import Path
 
 from reproforge.core.models import CommandSpec, ProjectProfile
 
+_VENV_PYTHON = "/workspace/.reproforge/runtime/venv/bin/python"
+
 
 def detect_project(root: Path) -> ProjectProfile:
     profile = ProjectProfile()
@@ -57,34 +59,64 @@ def _detect_python(root: Path, profile: ProjectProfile) -> None:
     if "flask" in joined:
         profile.frameworks.append("Flask")
         profile.services.append("HTTP server")
-    if "pytest" in joined or (root / "pytest.ini").exists() or (root / "tests").is_dir():
+
+    has_pytest = (
+        "pytest" in joined
+        or (root / "pytest.ini").exists()
+        or (root / "tests").is_dir()
+    )
+    if has_pytest:
         profile.test_runners.append("pytest")
-        profile.test_commands.append(
-            CommandSpec(argv=["python", "-m", "pytest", "-q"], purpose="test")
-        )
+
     if uv_lock.exists():
         profile.lockfiles.append("uv.lock")
         profile.package_managers.append("uv")
-        profile.setup_commands.append(CommandSpec(argv=["uv", "sync", "--frozen"], purpose="setup"))
-    elif poetry_lock.exists():
+        profile.setup_commands.append(
+            CommandSpec(argv=["uv", "sync", "--frozen"], purpose="setup")
+        )
+        if has_pytest:
+            profile.test_commands.append(
+                CommandSpec(argv=["uv", "run", "pytest", "-q"], purpose="test")
+            )
+        return
+
+    if poetry_lock.exists():
         profile.lockfiles.append("poetry.lock")
         profile.package_managers.append("poetry")
         profile.setup_commands.append(
             CommandSpec(argv=["poetry", "install", "--no-interaction"], purpose="setup")
         )
-    elif requirements.exists():
+        if has_pytest:
+            profile.test_commands.append(
+                CommandSpec(argv=["poetry", "run", "pytest", "-q"], purpose="test")
+            )
+        return
+
+    profile.package_managers.append("pip")
+    profile.setup_commands.append(
+        CommandSpec(
+            argv=["python", "-m", "venv", "/workspace/.reproforge/runtime/venv"],
+            purpose="setup",
+        )
+    )
+    if requirements.exists():
         profile.manifests.append("requirements.txt")
-        profile.package_managers.append("pip")
         profile.setup_commands.append(
             CommandSpec(
-                argv=["python", "-m", "pip", "install", "-r", "requirements.txt"],
+                argv=[_VENV_PYTHON, "-m", "pip", "install", "-r", "requirements.txt"],
                 purpose="setup",
             )
         )
     elif pyproject.exists():
-        profile.package_managers.append("pip")
         profile.setup_commands.append(
-            CommandSpec(argv=["python", "-m", "pip", "install", "-e", "."], purpose="setup")
+            CommandSpec(
+                argv=[_VENV_PYTHON, "-m", "pip", "install", "-e", "."],
+                purpose="setup",
+            )
+        )
+    if has_pytest:
+        profile.test_commands.append(
+            CommandSpec(argv=[_VENV_PYTHON, "-m", "pytest", "-q"], purpose="test")
         )
 
 
@@ -156,11 +188,15 @@ def _detect_rust(root: Path, profile: ProjectProfile) -> None:
     profile.manifests.append("Cargo.toml")
     if (root / "Cargo.lock").exists():
         profile.lockfiles.append("Cargo.lock")
+    cargo_env = {
+        "CARGO_HOME": "/workspace/.reproforge/runtime/cargo-home",
+        "CARGO_TARGET_DIR": "/workspace/.reproforge/runtime/cargo-target",
+    }
     profile.baseline_commands.append(
-        CommandSpec(argv=["cargo", "check", "--all-targets"], purpose="build")
+        CommandSpec(argv=["cargo", "check", "--all-targets"], env=cargo_env, purpose="build")
     )
     profile.test_commands.append(
-        CommandSpec(argv=["cargo", "test", "--all-targets"], purpose="test")
+        CommandSpec(argv=["cargo", "test", "--all-targets"], env=cargo_env, purpose="test")
     )
 
 
@@ -173,8 +209,16 @@ def _detect_go(root: Path, profile: ProjectProfile) -> None:
     profile.manifests.append("go.mod")
     if (root / "go.sum").exists():
         profile.lockfiles.append("go.sum")
-    profile.setup_commands.append(CommandSpec(argv=["go", "mod", "download"], purpose="setup"))
-    profile.test_commands.append(CommandSpec(argv=["go", "test", "./..."], purpose="test"))
+    go_env = {
+        "GOMODCACHE": "/workspace/.reproforge/runtime/go-mod",
+        "GOCACHE": "/workspace/.reproforge/runtime/go-build",
+    }
+    profile.setup_commands.append(
+        CommandSpec(argv=["go", "mod", "download"], env=go_env, purpose="setup")
+    )
+    profile.test_commands.append(
+        CommandSpec(argv=["go", "test", "./..."], env=go_env, purpose="test")
+    )
 
 
 def _detect_services(root: Path, profile: ProjectProfile) -> None:
