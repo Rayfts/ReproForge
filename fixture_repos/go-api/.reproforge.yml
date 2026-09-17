@@ -1,0 +1,13 @@
+sandbox:
+  image: golang:1.23-alpine
+  network: none
+setup:
+  - argv: ["true"]
+    purpose: setup
+tests:
+  - argv: ["go", "test", "./..."]
+    env:
+      GOMODCACHE: /workspace/.reproforge/runtime/go-mod
+      GOCACHE: /workspace/.reproforge/runtime/go-build
+    purpose: reproduction
+reproduction_attempts: 2

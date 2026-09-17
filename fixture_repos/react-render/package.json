@@ -1,0 +1,7 @@
+{
+  "name": "reproforge-react-render-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": {"react": "19.1.1", "react-dom": "19.1.1"},
+  "scripts": {"test": "node --test test/render.test.js"}
+}

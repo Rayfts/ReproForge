@@ -1,0 +1,13 @@
+sandbox:
+  image: rust:1.89-slim
+  network: none
+setup:
+  - argv: ["true"]
+    purpose: setup
+tests:
+  - argv: ["cargo", "test"]
+    env:
+      CARGO_HOME: /workspace/.reproforge/runtime/cargo-home
+      CARGO_TARGET_DIR: /workspace/.reproforge/runtime/cargo-target
+    purpose: reproduction
+reproduction_attempts: 2

@@ -1,0 +1,10 @@
+sandbox:
+  image: python:3.12-slim
+  network: none
+setup:
+  - argv: ["python", "-m", "venv", "/workspace/.reproforge/runtime/venv"]
+    purpose: setup
+tests:
+  - argv: ["/workspace/.reproforge/runtime/venv/bin/python", "-m", "unittest", "discover", "-s", "tests"]
+    purpose: reproduction
+reproduction_attempts: 2

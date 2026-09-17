@@ -1,0 +1,83 @@
+name: ReproForge issue automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_url:
+        description: GitHub issue URL to reproduce
+        required: true
+        type: string
+      image:
+        description: Optional Docker image override
+        required: false
+        type: string
+      harness:
+        description: Optional harness id
+        required: false
+        type: string
+      harness_image:
+        description: Optional Docker image containing the harness executable
+        required: false
+        type: string
+  issue_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: reproforge-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  reproduce:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.label.name == 'repro') ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request == null &&
+       (github.event.comment.body == '/repro' || startsWith(github.event.comment.body, '/repro ')) &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Resolve issue inputs
+        id: inputs
+        env:
+          DISPATCH_ISSUE_URL: ${{ inputs.issue_url || '' }}
+          EVENT_ISSUE_URL: ${{ github.event.issue.html_url || '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_url="$DISPATCH_ISSUE_URL"
+          if [[ -z "$issue_url" ]]; then issue_url="$EVENT_ISSUE_URL"; fi
+          if [[ -z "$issue_url" ]]; then
+            echo "No issue URL could be resolved" >&2
+            exit 2
+          fi
+          echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
+      - name: Run ReproForge action
+        uses: ./
+        with:
+          issue-url: ${{ steps.inputs.outputs.issue_url }}
+          image: ${{ inputs.image || '' }}
+          harness: ${{ inputs.harness || '' }}
+          harness-image: ${{ inputs.harness_image || '' }}
+          post-comment: "true"
+      - name: Collect archived evidence
+        if: always()
+        run: |
+          mkdir -p workflow-artifacts
+          if [[ -d "$HOME/.reproforge/runs" ]]; then
+            cp -R "$HOME/.reproforge/runs" workflow-artifacts/
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reproforge-evidence-${{ github.run_id }}
+          path: workflow-artifacts
+          if-no-files-found: warn
+          retention-days: 14

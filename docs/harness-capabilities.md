@@ -1,0 +1,26 @@
+# Harness capability research
+
+This matrix records the upstream source used for ReproForge's initial adapter decisions. Research snapshot: **2026-09-17**. ReproForge does not invent missing flags and does not assume editor extensions are automatically headless.
+
+Installed versions are probed with `<executable> --version` when the user asks for host detection. The initial adapter policy targets the currently documented upstream CLI surface rather than pretending to support an unverified historic semver range.
+
+| ID | Upstream repository | Verified integration | Supported-version policy | Capabilities / limitations |
+| --- | --- | --- | --- | --- |
+| `codex` | https://github.com/openai/codex | `codex exec --json --ephemeral` | Current upstream CLI exposing the verified `exec` JSON surface; installed version is recorded when detectable. No historical range is claimed. | JSONL events; source also exposes resume/fork and MCP-related execution. Evidence: `codex-rs/exec/src/cli.rs`, `codex-rs/exec/src/exec_events.rs`. |
+| `claude-code` | https://github.com/anthropics/claude-code | headless CLI with stream JSON | Current documented Claude Code CLI supporting print/headless stream JSON; no unverified backward-compatibility range is claimed. | Stream JSON is a documented product surface. The public repo is not a complete mirror of every product component, so the adapter stays on documented CLI behavior. Goose's upstream Claude provider is additional source evidence for the stream JSON protocol. |
+| `opencode` | https://github.com/anomalyco/opencode | `opencode run --format json` | Current `anomalyco/opencode` CLI with the verified `run` JSON surface. The archived predecessor is not treated as compatible. | Current source supports non-interactive run, JSON event output, model selection, session continuation, and server attach. The older `opencode-ai/opencode` repository is archived. |
+| `pi` | https://github.com/earendil-works/pi | `pi --mode json -p ...` | Current `@earendil-works/pi-coding-agent` CLI exposing `--mode json` and `--print/-p`; installed version is probed rather than mapped to an invented semver range. | Upstream documents interactive, print, JSON-event, and stdin/stdout RPC modes. Pi itself explicitly recommends external sandboxing for permission boundaries. |
+| `gemini-cli` | https://github.com/google-gemini/gemini-cli | `gemini -p ... --output-format stream-json` | Current Gemini CLI supporting non-interactive prompt mode and `stream-json`; no older range is asserted without compatibility evidence. | Official source/docs describe `json` and `stream-json`, with `-p/--prompt` as non-interactive mode. |
+| `aider` | https://github.com/Aider-AI/aider | `aider --message ... --yes --no-auto-commits` | Current Aider CLI exposing the verified scripting flags. Compatibility with older releases is intentionally not assumed. | Official scripting docs verify one-shot messages and confirmation/auto-commit controls. ReproForge does not claim a structured event stream for this adapter. |
+| `goose` | https://github.com/aaif-goose/goose | `goose run ... --output-format stream-json --no-session` | Current Goose CLI exposing the documented headless `run` and stream-JSON flags; no unverified historic range is claimed. | Official docs/source expose headless task execution, JSON/stream-JSON output, providers, recipes, and session management. |
+| `cline` | https://github.com/cline/cline | `cline --json ...` | Current Cline CLI/SDK release line containing the documented headless JSON CLI. Older editor-only releases are not assumed compatible. | Current repo contains a real CLI/SDK. CLI README documents one-shot/headless CI use and NDJSON output. |
+| `roo-code` | https://github.com/RooCodeInc/Roo-Code | archival/import only | No current launchable version is supported. Historical artifacts may be imported by future archival adapters, but no live CLI range is claimed. | Official repository is archived. Its current README states that the Roo Code extension was shut down on **May 15, 2026**. ReproForge therefore exposes no fake launcher. |
+| `continue` | https://github.com/continuedev/continue | `cn -p ... --format json` | Current Continue CLI exposing documented headless print/JSON mode. Model selection remains configuration-driven until a stable CLI flag is verified. | Official CLI docs/source describe headless print mode, JSON output, and MCP behavior. |
+
+## Version policy
+
+A capability record says what ReproForge has verified, not what every historical release supports. `reproforge capabilities <id> --detect` records the installed executable path/version when the upstream binary supports `--version`. Before widening a version range, add upstream evidence and compatibility tests. If an upstream CLI changes, detection or invocation should fail visibly rather than silently invoking a guessed replacement.
+
+## Authentication
+
+ReproForge's adapter registry describes invocation, not a promise that authentication is preconfigured. Harness containers do not receive the host home directory. Build a harness image with the executable and deliberately provide supported credentials through narrowly scoped operator-granted configuration/environment mechanisms.
