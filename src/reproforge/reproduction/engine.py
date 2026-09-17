@@ -21,6 +21,7 @@ from reproforge.repository.git import GitRepository
 from reproforge.reports.writer import write_report_bundle
 from reproforge.reproduction.investigation import HarnessPlan, investigate_harness
 from reproforge.reproduction.support import (
+    capture_repository_patch,
     command_succeeded,
     environment_snapshot,
     result_summary,
@@ -30,7 +31,6 @@ from reproforge.reproduction.support import (
     terminal_report,
 )
 from reproforge.sandbox.docker import DockerSandbox, DockerSession
-from reproforge.security.redaction import redact
 from reproforge.validation.oracles import classify_attempts, inspect_command
 
 
@@ -155,7 +155,14 @@ class ReproductionEngine:
                     inspection=inspection,
                 )
                 caveats.extend(harness_caveats)
-                await self._capture_harness_patch(repository, workspace, secret_values, artifacts)
+                harness_patch = await capture_repository_patch(
+                    repository,
+                    workspace,
+                    "harness.patch",
+                    secret_values,
+                )
+                if harness_patch:
+                    artifacts["harness_patch"] = harness_patch
                 generated_regression_test = plan.regression_test
 
             reproduction_commands = plan.reproduction_commands or test_plan(inspection.profile, self.config)
@@ -181,7 +188,14 @@ class ReproductionEngine:
                 return report
 
             for number in range(1, self.config.reproduction_attempts + 1):
-                attempts.append(await self._attempt(session, number=number, commands=reproduction_commands))
+                attempt = await self._attempt(session, number=number, commands=reproduction_commands)
+                attempt.filesystem_diff_path = await capture_repository_patch(
+                    repository,
+                    workspace,
+                    f"attempt-{number:03d}.patch",
+                    secret_values,
+                )
+                attempts.append(attempt)
 
             status, rate, deterministic, confidence, primary = classify_attempts(
                 attempts,
@@ -260,18 +274,3 @@ class ReproductionEngine:
             return any(signal.fingerprint == fingerprint for signal in signals)
 
         return await ddmin(commands, preserves, max_trials=self.config.minimization.max_trials)
-
-    async def _capture_harness_patch(
-        self,
-        repository: GitRepository,
-        workspace: Path,
-        secret_values: tuple[str, ...],
-        artifacts: dict[str, str],
-    ) -> None:
-        patch = await repository.diff()
-        if not patch:
-            return
-        patch_path = workspace / ".reproforge" / "patches" / "harness.patch"
-        patch_path.parent.mkdir(parents=True, exist_ok=True)
-        patch_path.write_text(redact(patch, secret_values=secret_values), encoding="utf-8")
-        artifacts["harness_patch"] = str(patch_path.relative_to(workspace))
