@@ -5,13 +5,13 @@ import os
 import platform
 import shutil
 import uuid
-from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
 
 from reproforge.core.config import SandboxConfig
 from reproforge.core.models import CommandResult, CommandSpec
 from reproforge.sandbox.base import SandboxBackend, SandboxError
+from reproforge.sandbox.process import capture_command
 
 
 class DockerSession:
@@ -78,7 +78,7 @@ class DockerSession:
             self.backend._validate_env(key, value)
             argv.extend(["--env", f"{key}={value}"])
         argv.extend([self.name, *command.argv])
-        result = await _capture(argv, command)
+        result = await capture_command(argv, command)
         if result.timed_out:
             await self._restart_after_timeout()
         return result
@@ -274,30 +274,3 @@ def _host_user() -> str | None:
     if os.name == "nt":
         return None
     return f"{os.getuid()}:{os.getgid()}"
-
-
-async def _capture(argv: list[str], command: CommandSpec) -> CommandResult:
-    started = datetime.now(UTC)
-    proc = await asyncio.create_subprocess_exec(
-        *argv,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    timed_out = False
-    try:
-        stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=command.timeout_seconds)
-    except TimeoutError:
-        timed_out = True
-        proc.kill()
-        stdout_b, stderr_b = await proc.communicate()
-    finished = datetime.now(UTC)
-    return CommandResult(
-        command=command,
-        exit_code=proc.returncode,
-        stdout=stdout_b.decode("utf-8", errors="replace"),
-        stderr=stderr_b.decode("utf-8", errors="replace"),
-        started_at=started,
-        finished_at=finished,
-        timed_out=timed_out,
-        duration_seconds=(finished - started).total_seconds(),
-    )
