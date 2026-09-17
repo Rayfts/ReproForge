@@ -12,6 +12,7 @@
 - `environment`: sandbox backend, image, limits, revision, network policy, and detected project profile.
 - `setup_commands`: observed dependency/setup process results.
 - `baseline_commands`: observed pre-investigation build/check results.
+- `harness_commands`: exact coding-agent harness invocations and their observed process results.
 - `attempts`: repeated reproduction commands and observed signals.
 - `primary_signal`: representative observed failure, if present.
 - `reproduction_rate`: fraction of attempts that produced a failure signal.
@@ -28,9 +29,11 @@
 
 Status and confidence intentionally remain separate. A run can have a clear category while still carrying limited confidence about whether the observed failure semantically matches the human report.
 
-## JSONL files
+## JSONL and log files
 
-`commands.jsonl` records setup, baseline, and attempt command results with phase metadata. `attempts.jsonl` records one complete attempt per line.
+`commands.jsonl` records setup, baseline, harness, and reproduction-attempt command results with phase metadata. This means the agent process itself is part of the evidence trail rather than hidden control-plane activity. `attempts.jsonl` records one complete reproduction attempt per line.
+
+Non-empty stdout/stderr streams for those commands are also written under `logs/`. `reproduction/commands.json` stores the selected reproduction command sequence, `reproduction/minimized.txt` stores a reduced sequence when available, and `regression-test/proposal.md` stores the harness proposal separately from observed validation evidence.
 
 ## Redaction
 
@@ -38,4 +41,4 @@ Configured secret values and common credential-shaped strings are redacted befor
 
 ## Compatibility
 
-Additive optional fields may be introduced within `1.0`. Removing/renaming fields or changing their meaning requires a new schema version and migration documentation.
+Additive optional/defaulted fields may be introduced within `1.0`. Removing/renaming fields or changing their meaning requires a new schema version and migration documentation.
