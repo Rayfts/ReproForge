@@ -4,10 +4,11 @@ import asyncio
 import json
 import os
 import shutil
-import sys
 import uuid
 import zipfile
+from collections.abc import Coroutine
 from pathlib import Path
+from typing import Any, Never, TypeVar
 
 import typer
 from rich.console import Console
@@ -29,6 +30,8 @@ app = typer.Typer(
     help="Turn bug reports into reproducible evidence.",
 )
 console = Console()
+error_console = Console(stderr=True)
+T = TypeVar("T")
 
 _EVIDENCE_FILES = (
     "report.json",
@@ -394,24 +397,24 @@ def _store() -> RunStore:
     return RunStore(_home() / "state")
 
 
-def _run_async(coro: object) -> None:
+def _run_async(coro: Coroutine[Any, Any, None]) -> None:
     try:
-        asyncio.run(coro)  # type: ignore[arg-type]
+        asyncio.run(coro)
     except KeyboardInterrupt:
         raise typer.Exit(code=130) from None
     except Exception as exc:
-        console.print(f"[bold red]error:[/bold red] {exc}", file=sys.stderr)
+        error_console.print(f"[bold red]error:[/bold red] {exc}")
         raise typer.Exit(code=1) from exc
 
 
-def _run_async_result(coro: object):  # type: ignore[no-untyped-def]
+def _run_async_result(coro: Coroutine[Any, Any, T]) -> T:
     try:
-        return asyncio.run(coro)  # type: ignore[arg-type]
+        return asyncio.run(coro)
     except Exception as exc:
-        console.print(f"[bold red]error:[/bold red] {exc}", file=sys.stderr)
+        error_console.print(f"[bold red]error:[/bold red] {exc}")
         raise typer.Exit(code=1) from exc
 
 
-def _die(message: str) -> None:
-    console.print(f"[bold red]error:[/bold red] {message}", file=sys.stderr)
+def _die(message: str) -> Never:
+    error_console.print(f"[bold red]error:[/bold red] {message}")
     raise typer.Exit(code=2)
