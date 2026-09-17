@@ -26,11 +26,15 @@ class GitRepository:
         argv = ["git", "clone", "--no-tags"]
         if depth is not None:
             argv += ["--depth", str(depth)]
-        if revision:
-            argv += ["--branch", revision]
         argv += [url, str(destination)]
         await _run(argv, cwd=destination.parent)
-        return cls(destination)
+        repository = cls(destination)
+        if revision:
+            await repository.checkout(revision)
+        return repository
+
+    async def checkout(self, revision: str) -> None:
+        await _run(["git", "checkout", "--detach", revision], cwd=self.path)
 
     async def revision(self) -> str:
         return (await _run(["git", "rev-parse", "HEAD"], cwd=self.path)).strip()
