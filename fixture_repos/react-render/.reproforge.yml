@@ -1,0 +1,10 @@
+sandbox:
+  image: node:22-slim
+  network: bridge
+setup:
+  - argv: ["npm", "install", "--ignore-scripts", "--no-audit", "--no-fund"]
+    purpose: setup
+tests:
+  - argv: ["npm", "test"]
+    purpose: reproduction
+reproduction_attempts: 2
