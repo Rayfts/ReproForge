@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import platform
 from datetime import datetime
+from pathlib import Path
 
 from reproforge.core.config import ReproForgeConfig
 from reproforge.core.models import (
@@ -16,6 +17,7 @@ from reproforge.core.models import (
 from reproforge.repository.analyzer import RepositoryInspection
 from reproforge.repository.git import GitRepository
 from reproforge.sandbox.docker import DockerSession
+from reproforge.security.redaction import redact
 
 
 async def run_commands(
@@ -56,6 +58,21 @@ async def safe_diff(repository: GitRepository) -> str | None:
         return await repository.diff()
     except Exception:
         return None
+
+
+async def capture_repository_patch(
+    repository: GitRepository,
+    workspace: Path,
+    filename: str,
+    secret_values: tuple[str, ...],
+) -> str | None:
+    patch = await safe_diff(repository)
+    if not patch:
+        return None
+    path = workspace / ".reproforge" / "patches" / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(redact(patch, secret_values=secret_values), encoding="utf-8")
+    return str(path.relative_to(workspace))
 
 
 def environment_snapshot(
