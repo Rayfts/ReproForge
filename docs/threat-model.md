@@ -16,13 +16,15 @@ Assume a repository, dependency, test, build script, issue body, fixture, genera
 
 ### Host/control plane
 
-The control plane may hold GitHub credentials for issue metadata, private-repository cloning, or comments. Those credentials are not inherited by sandbox processes. Authentication used for a host-side clone must be scoped to that Git process and must not be written into the cloned repository or mounted into the execution container.
+The control plane may hold GitHub credentials for issue metadata, private-repository cloning, or comments. Those credentials are not inherited by sandbox processes. Authentication used for a host-side clone is scoped to that Git process and is not written into the cloned repository or mounted into the execution container.
 
 ### Project sandbox
 
 Only the target workspace is bind-mounted read/write. Container root is read-only by default; `/tmp` is a tmpfs and becomes `HOME`. Linux capabilities are dropped, `no-new-privileges` is set, resources are bounded, and network mode defaults to `none`.
 
-The workspace is not a confidentiality boundary. Malicious code can read and modify anything in that workspace.
+Before repository inspection or mounting, ReproForge rejects workspaces that equal, contain, or sit inside the non-removable sensitive-path baseline `~/.ssh`, `~/.aws`, `~/.config/gh`, and `/var/run/docker.sock`. Repository configuration can add forbidden paths but cannot remove those baseline protections. A blocked workspace is not modified; minimal failure evidence is archived only under the control-plane `REPROFORGE_HOME`.
+
+The workspace is not a confidentiality boundary. Once accepted and mounted, malicious code can read and modify anything in that workspace.
 
 ### Harness sandbox
 
@@ -43,6 +45,8 @@ No ambient host environment is inherited. Repository configuration may *request*
 ## Docker daemon
 
 The host control plane invokes the Docker CLI. Containers never receive the Docker socket. Anyone who can control the ReproForge host process itself is outside this sandbox boundary because the host process already has permission to ask Docker to create containers.
+
+If a sandboxed command times out, ReproForge stops and restarts the disposable run container before another command executes. This prevents a timed-out `docker exec` client from leaving an unknown child process running unnoticed inside the continuing session.
 
 ## Supply-chain risks
 
