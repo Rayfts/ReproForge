@@ -19,6 +19,15 @@ from reproforge.repository.git import GitRepository
 from reproforge.sandbox.docker import DockerSession
 from reproforge.security.redaction import redact
 
+_BASE_FORBIDDEN_PATHS = frozenset(
+    {
+        "~/.ssh",
+        "~/.aws",
+        "~/.config/gh",
+        "/var/run/docker.sock",
+    }
+)
+
 
 async def run_commands(
     session: DockerSession,
@@ -37,13 +46,27 @@ def command_succeeded(result: CommandResult) -> bool:
     return not result.timed_out and result.exit_code == 0
 
 
-def runtime_policy_error(config: ReproForgeConfig) -> str | None:
+def runtime_policy_error(config: ReproForgeConfig, *, workspace: Path | None = None) -> str | None:
     if config.security.allowed_network_domains:
         return (
             "The Docker backend cannot enforce allowed_network_domains yet; "
             "refusing to execute with a domain allowlist configured."
         )
+    if workspace is not None:
+        resolved_workspace = workspace.expanduser().resolve()
+        forbidden_paths = _BASE_FORBIDDEN_PATHS | frozenset(config.security.forbidden_filesystem_paths)
+        for raw_path in forbidden_paths:
+            forbidden = Path(raw_path).expanduser().resolve(strict=False)
+            if _paths_intersect(resolved_workspace, forbidden):
+                return (
+                    f"Workspace {resolved_workspace} intersects forbidden host path {forbidden}; "
+                    "refusing to mount it into the sandbox."
+                )
     return None
+
+
+def _paths_intersect(first: Path, second: Path) -> bool:
+    return first == second or first in second.parents or second in first.parents
 
 
 async def safe_revision(repository: GitRepository) -> str | None:
@@ -77,7 +100,7 @@ async def capture_repository_patch(
 
 def environment_snapshot(
     config: ReproForgeConfig,
-    inspection: RepositoryInspection,
+    inspection: RepositoryInspection | None,
     revision: str | None,
 ) -> EnvironmentSnapshot:
     limits = config.sandbox.limits
@@ -91,7 +114,7 @@ def environment_snapshot(
         pids_limit=limits.pids,
         network_policy=config.sandbox.network,
         injected_environment_keys=sorted(config.selected_environment()),
-        detected_project=inspection.profile,
+        detected_project=inspection.profile if inspection is not None else None,
     )
 
 
