@@ -9,6 +9,8 @@ from pydantic import Field, field_validator
 
 from reproforge.core.models import CommandSpec, StrictModel
 
+_CONTROL_PLANE_SECRETS = frozenset({"GITHUB_TOKEN", "GH_TOKEN"})
+
 
 class ResourceLimits(StrictModel):
     timeout_seconds: int = Field(default=600, ge=1, le=86_400)
@@ -70,11 +72,16 @@ class ReproForgeConfig(StrictModel):
 
     def selected_environment(self) -> dict[str, str]:
         selected: dict[str, str] = dict(self.environment)
+        environment_grants = _operator_grants("REPROFORGE_ENV_GRANTS")
+        secret_grants = _operator_grants("REPROFORGE_SECRET_GRANTS")
+
         for key in self.security.allowed_environment:
-            if key in os.environ:
+            if key in environment_grants and key in os.environ:
                 selected[key] = os.environ[key]
         for key in self.security.allowed_secrets:
-            if key in os.environ:
+            if key in _CONTROL_PLANE_SECRETS:
+                continue
+            if key in secret_grants and key in os.environ:
                 selected[key] = os.environ[key]
         return selected
 
@@ -93,3 +100,8 @@ def load_config(path: Path | None, *, cwd: Path | None = None) -> ReproForgeConf
 def dump_default_config() -> str:
     data: dict[str, Any] = ReproForgeConfig().model_dump(mode="json", exclude_none=True)
     return yaml.safe_dump(data, sort_keys=False)
+
+
+def _operator_grants(name: str) -> set[str]:
+    raw = os.getenv(name, "")
+    return {item.strip() for item in raw.split(",") if item.strip()}
