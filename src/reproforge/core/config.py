@@ -76,6 +76,8 @@ class ReproForgeConfig(StrictModel):
         secret_grants = _operator_grants("REPROFORGE_SECRET_GRANTS")
 
         for key in self.security.allowed_environment:
+            if key in _CONTROL_PLANE_SECRETS:
+                continue
             if key in environment_grants and key in os.environ:
                 selected[key] = os.environ[key]
         for key in self.security.allowed_secrets:
