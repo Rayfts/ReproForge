@@ -4,14 +4,14 @@ ReproForge turns software bug reports into **reproducible evidence**.
 
 Instead of asking an agent whether a bug is real, ReproForge creates an isolated workspace, establishes a baseline, lets a supported coding-agent harness investigate, and then independently reruns exact commands to decide whether a measurable failure occurred.
 
-> **Status:** early public-OSS foundation. The versioned report schema, hardened Docker execution boundary, deterministic validation engine, initial 10-harness capability layer, evidence archive, and GitHub issue workflow are implemented. A full GitHub App remains a future deployment surface rather than being presented as already deployed.
+> **Status:** early public-OSS foundation. The versioned report schema, hardened Docker execution boundary, deterministic validation engine, initial 10-harness capability layer, evidence archive, reusable GitHub Action, and issue workflow are implemented. A full GitHub App remains a future deployment surface rather than being presented as already deployed.
 
 ## Evidence, not agent opinion
 
 A run can capture:
 
 - the exact repository revision and detected project stack;
-- setup, build, baseline, and reproduction commands with exit codes and timing;
+- setup, build, baseline, harness, and reproduction commands with exit codes and timing;
 - per-command stdout/stderr logs and normalized failure fingerprints;
 - repeated-attempt reproduction rate and determinism;
 - harness and per-attempt filesystem changes as Git patches when Git history is available;
@@ -96,9 +96,9 @@ reproforge capabilities <harness> [--detect]
 
 ## GitHub automation
 
-The included issue workflow supports manual dispatch, a `repro` issue label, and maintainer/collaborator `/repro` comments. It uploads the archived evidence bundle and can post the concise evidence summary back to the issue. Generated patches remain artifacts; ReproForge never pushes them automatically.
+The repository includes a reusable composite `action.yml` for `Rayfts/ReproForge@<ref>` consumers. The bundled issue workflow uses that same action and supports manual dispatch, a `repro` issue label, and maintainer/collaborator `/repro` comments. It uploads the archived evidence bundle and can post the concise evidence summary back to the issue. Generated patches remain artifacts; ReproForge never pushes them automatically.
 
-Private GitHub issue repositories can be cloned using the control-plane GitHub token. Clone authentication is scoped to the host Git process and is not written into the repository or passed to Docker.
+Private GitHub issue repositories can be cloned using the control-plane GitHub token. Clone authentication is scoped to the host Git process and is not written into the repository or passed to Docker. See [GitHub integration](docs/github-integration.md) for action inputs and required caller permissions.
 
 ## Harness support
 
