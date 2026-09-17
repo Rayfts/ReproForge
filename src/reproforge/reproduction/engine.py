@@ -25,6 +25,7 @@ from reproforge.reproduction.support import (
     environment_snapshot,
     result_summary,
     run_commands,
+    runtime_policy_error,
     safe_revision,
     terminal_report,
 )
@@ -58,6 +59,20 @@ class ReproductionEngine:
             if key in self.config.security.allowed_secrets
         )
 
+        policy_error = runtime_policy_error(self.config)
+        if policy_error is not None:
+            report = terminal_report(
+                request=request,
+                run_id=run_id,
+                started=started,
+                environment=environment,
+                status=RunStatus.INFRASTRUCTURE_FAILURE,
+                summary=policy_error,
+                caveats=["No repository code was executed because the requested network policy cannot be enforced."],
+            )
+            write_report_bundle(workspace, report, secret_values=secret_values)
+            return report
+
         if self.config.sandbox.image is None:
             report = terminal_report(
                 request=request,
@@ -88,10 +103,7 @@ class ReproductionEngine:
             environment=selected_environment,
         )
         async with session:
-            setup_results = await run_commands(
-                session,
-                setup_plan(inspection.profile, self.config),
-            )
+            setup_results = await run_commands(session, setup_plan(inspection.profile, self.config))
             failed_setup = next((result for result in setup_results if not command_succeeded(result)), None)
             if failed_setup is not None:
                 report = terminal_report(
@@ -106,10 +118,7 @@ class ReproductionEngine:
                 write_report_bundle(workspace, report, secret_values=secret_values)
                 return report
 
-            baseline_results = await run_commands(
-                session,
-                baseline_plan(inspection.profile, self.config),
-            )
+            baseline_results = await run_commands(session, baseline_plan(inspection.profile, self.config))
             failed_baseline = next(
                 (result for result in baseline_results if not command_succeeded(result)),
                 None,
