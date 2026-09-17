@@ -29,6 +29,7 @@ from reproforge.reproduction.support import (
     runtime_policy_error,
     safe_revision,
     terminal_report,
+    workspace_policy_error,
 )
 from reproforge.sandbox.docker import DockerSandbox, DockerSession
 from reproforge.validation.oracles import classify_attempts, inspect_command
@@ -48,6 +49,19 @@ class ReproductionEngine:
         started = utcnow()
         run_id = uuid.uuid4().hex
         workspace = workspace.resolve()
+
+        workspace_error = workspace_policy_error(self.config, workspace)
+        if workspace_error is not None:
+            return terminal_report(
+                request=request,
+                run_id=run_id,
+                started=started,
+                environment=environment_snapshot(self.config, None, None),
+                status=RunStatus.INFRASTRUCTURE_FAILURE,
+                summary=workspace_error,
+                caveats=["No repository files were inspected or mounted into Docker."],
+            )
+
         inspection = inspect_repository(workspace)
         repository = GitRepository(workspace)
         revision = await safe_revision(repository)
