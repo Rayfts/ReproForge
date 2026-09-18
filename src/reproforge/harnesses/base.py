@@ -165,7 +165,7 @@ class CliHarnessAdapter:
 
     async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]:
         if self._runtime is None:
-            raise RuntimeError(f"{self.id} requires an injected sandbox HarnessRuntime; host execution is intentionally disabled")  # noqa: E501
+            raise RuntimeError(f"{self.id} requires an injected sandbox HarnessRuntime; host execution is intentionally disabled")
         invocation = self.build_invocation(request)
         async for event in self._runtime.stream(invocation, harness_id=self.id):
             yield event
