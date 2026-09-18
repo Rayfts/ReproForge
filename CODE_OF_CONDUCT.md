@@ -1,11 +1,25 @@
 # Code of Conduct
 
-ReproForge contributors are expected to keep technical collaboration professional, respectful, and focused on the work.
+ReproForge is an open-source engineering project. We want discussion, review, and collaboration to stay useful, respectful, and safe for everyone participating.
 
-Harassment, threats, discriminatory abuse, deliberate intimidation, doxxing, credential exposure, and malicious disruption are not acceptable in project spaces. Technical disagreement is welcome; attacks on people are not.
+## Expected behavior
 
-Maintainers may edit, remove, or reject contributions and participation that violate these expectations. Serious or repeated violations may result in temporary or permanent exclusion from project spaces.
+- Discuss code, evidence, and ideas on their merits.
+- Give specific, actionable feedback and assume good faith where reasonable.
+- Respect different experience levels, backgrounds, and communication styles.
+- Keep technical disagreement focused on the work, not the person.
+- Protect private information, credentials, and security-sensitive details.
 
-For sensitive conduct reports, use a private communication channel offered by the repository maintainers rather than posting personal information publicly. Reports should include enough context to investigate fairly. Retaliation against a reporter or participant in an investigation is prohibited.
+## Unacceptable behavior
 
-These expectations apply to repository discussions, issues, pull requests, reviews, and other spaces where someone is acting as a ReproForge community participant.
+Harassment, threats, discriminatory or sexualized language, doxxing, deliberate disruption, personal attacks, intimidation, or publishing another person's private information without permission are not acceptable.
+
+## Scope
+
+This policy applies to issues, pull requests, reviews, discussions, project-managed community spaces, and direct project interactions connected to ReproForge.
+
+## Enforcement
+
+Maintainers may edit or remove abusive content, close or lock threads, reject contributions, or restrict participation when behavior materially harms contributors or the project. Responses should be proportionate to the conduct and focused on restoring productive participation.
+
+For conduct concerns that should not be handled publicly, use a private repository contact mechanism when one is available. Do not place personal, confidential, or security-sensitive information in a public issue.

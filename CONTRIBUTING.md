@@ -1,10 +1,12 @@
 # Contributing to ReproForge
 
+Thanks for helping improve ReproForge. Contributions are welcome across the reproduction engine, sandboxing, project detection, harness adapters, reports, fixtures, documentation, and GitHub integration.
+
 ReproForge executes untrusted software, so correctness and containment matter more than convenience.
 
 ## Development setup
 
-Python 3.12+ is supported. `uv` is the recommended contributor workflow:
+Python 3.12+ is supported. `uv` is the recommended workflow:
 
 ```bash
 uv sync --extra dev
@@ -21,25 +23,27 @@ Run Docker integration tests separately:
 uv run pytest -m integration
 ```
 
-## Design rules
+## Project rules
 
 1. Never add a host-execution fallback for target repository code.
-2. Never pass the ambient environment into a sandbox.
-3. Agent statements are not reproduction evidence. Add or improve a deterministic oracle instead.
-4. Do not invent third-party CLI flags or event fields. Link adapter changes to upstream source or official documentation.
-5. Keep `report.json` backward-compatible within its schema version. A breaking change requires a new version and migration notes.
-6. Generated patches are artifacts. Do not push them automatically.
-7. Add tests for security-boundary changes and new detection rules.
-8. Keep every Python source and test file at **300 physical lines or fewer**. Split modules by responsibility rather than compressing or hiding logic to satisfy the limit; `tests/test_source_layout.py` enforces it.
+2. Never pass the ambient host environment into a sandbox.
+3. Agent statements are analysis, not reproduction evidence. Deterministic validation remains the oracle.
+4. Do not invent third-party CLI flags, event fields, or capabilities. Adapter changes must be backed by upstream source or official documentation.
+5. Keep versioned report formats backward-compatible within a schema version.
+6. Generated fixes and tests are artifacts; do not push them automatically.
+7. Security-boundary changes require focused tests.
+8. Keep Python source and test files at 300 physical lines or fewer; split by responsibility rather than compressing logic.
 
-## Harness changes
+## Harness adapters
 
-For a harness adapter, include the upstream repository, integration mode, verified invocation, event/output model, authentication constraints, supported-version policy, and known limitations. See `docs/harness-adapter-guide.md`.
+When adding or changing an adapter, document the upstream repository, invocation mode, output/event format, authentication assumptions, supported-version policy, and known limitations. Update the capability documentation and contract tests in the same pull request.
 
 ## Fixture repositories
 
-Fixture projects are intentionally broken. Keep each failure deterministic and small. Avoid real credentials, external production services, or destructive behavior.
+Fixtures are intentionally broken. Keep failures deterministic, small, offline-friendly where practical, and free of real credentials or destructive behavior.
 
 ## Pull requests
 
-Keep changes reviewable and describe the evidence used to validate behavior. Security-sensitive changes should explain how the host/sandbox trust boundary is preserved.
+Keep PRs focused. Explain what changed, why it is safe, how it was tested, and any compatibility or security implications. If behavior affects evidence classification, include a fixture or regression test that demonstrates the expected result.
+
+By contributing, you agree to follow the repository's `CODE_OF_CONDUCT.md` and Apache-2.0 license terms.

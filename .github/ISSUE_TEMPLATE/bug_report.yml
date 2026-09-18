@@ -1,0 +1,49 @@
+name: Bug report
+description: Report reproducible incorrect behavior in ReproForge
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting a bug. Do not include secrets or vulnerability details here; see SECURITY.md for security reports."
+  - type: input
+    id: version
+    attributes:
+      label: ReproForge version or commit
+      placeholder: "v0.x.y or commit SHA"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Include sanitized commands, configuration, and the smallest repository/example that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python, Docker/Podman, harness name/version, and relevant runtime details.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I removed credentials, tokens, private source, and other sensitive data.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true
