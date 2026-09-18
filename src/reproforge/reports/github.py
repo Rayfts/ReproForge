@@ -19,8 +19,7 @@ def render_issue_comment(report: ReproductionReport) -> str:
             [
                 "",
                 "**Observed failing command**",
-                f"`{' '.join(failing.command.argv)}` — "
-                f"{'timed out' if failing.timed_out else f'exit {failing.exit_code}'}",
+                f"`{' '.join(failing.command.argv)}` — {'timed out' if failing.timed_out else f'exit {failing.exit_code}'}",
             ]
         )
 

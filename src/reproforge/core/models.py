@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
-REPORT_SCHEMA_VERSION = "1.0"
+REPORT_SCHEMA_VERSION: Literal["1.0"] = "1.0"
 
 
 class StrictModel(BaseModel):

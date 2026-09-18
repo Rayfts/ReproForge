@@ -135,10 +135,7 @@ def _write_commands(
     report: ReproductionReport,
     secret_values: tuple[str, ...],
 ) -> None:
-    lines = [
-        _jsonl_command(command, metadata, secret_values)
-        for metadata, command in _iter_commands(report)
-    ]
+    lines = [_jsonl_command(command, metadata, secret_values) for metadata, command in _iter_commands(report)]
     path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
 
 
@@ -170,11 +167,7 @@ def _write_reproduction(
     attempts = report.attempts
     fallback = attempts[0] if attempts else None
     source_attempt = next((attempt for attempt in attempts if attempt.reproduced), fallback)
-    commands = (
-        []
-        if source_attempt is None
-        else [result.command.model_dump(mode="json") for result in source_attempt.commands]
-    )
+    commands = [] if source_attempt is None else [result.command.model_dump(mode="json") for result in source_attempt.commands]
     _write_json(directory / "commands.json", commands, secret_values)
     if report.minimized_reproduction:
         (directory / "minimized.txt").write_text(

@@ -42,11 +42,13 @@ class GitHubClient:
         match = _ISSUE_RE.match(url.strip())
         if not match:
             raise ValueError("expected a GitHub issue URL like https://github.com/org/repo/issues/123")
-        return IssueRef(
-            owner=match.group("owner"),
-            repo=match.group("repo"),
-            number=int(match.group("number")),
-            url=url,
+        return IssueRef.model_validate(
+            {
+                "owner": match.group("owner"),
+                "repo": match.group("repo"),
+                "number": int(match.group("number")),
+                "url": url,
+            }
         )
 
     async def fetch_issue(self, url: str) -> IssueMetadata:
@@ -63,13 +65,11 @@ class GitHubClient:
             )
         if issue_response.status_code != 200:
             raise GitHubError(
-                f"GitHub issue lookup failed with HTTP {issue_response.status_code}: "
-                f"{_safe_message(issue_response)}"
+                f"GitHub issue lookup failed with HTTP {issue_response.status_code}: {_safe_message(issue_response)}"
             )
         if repo_response.status_code != 200:
             raise GitHubError(
-                f"GitHub repository lookup failed with HTTP {repo_response.status_code}: "
-                f"{_safe_message(repo_response)}"
+                f"GitHub repository lookup failed with HTTP {repo_response.status_code}: {_safe_message(repo_response)}"
             )
         issue = issue_response.json()
         repo = repo_response.json()

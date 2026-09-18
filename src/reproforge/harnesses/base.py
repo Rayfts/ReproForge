@@ -77,7 +77,7 @@ class HarnessInvocation(StrictModel):
 class HarnessRuntime(Protocol):
     """Execution boundary supplied by ReproForge's sandbox layer."""
 
-    async def stream(
+    def stream(
         self,
         invocation: HarnessInvocation,
         *,
@@ -96,7 +96,7 @@ class HarnessAdapter(Protocol):
 
     def build_invocation(self, request: HarnessRunRequest) -> HarnessInvocation: ...
 
-    async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]: ...
+    def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]: ...
 
     async def cancel(self) -> None: ...
 
@@ -189,8 +189,7 @@ class ArchivalHarnessAdapter:
     def build_invocation(self, request: HarnessRunRequest) -> HarnessInvocation:
         del request
         raise RuntimeError(
-            f"{self.id} has no current supported headless launcher; "
-            "historical artifacts must be imported explicitly"
+            f"{self.id} has no current supported headless launcher; historical artifacts must be imported explicitly"
         )
 
     async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]:
