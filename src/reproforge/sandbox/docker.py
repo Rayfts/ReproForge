@@ -15,8 +15,6 @@ from reproforge.sandbox.process import capture_command
 
 
 class DockerSession:
-    """Long-lived disposable container for one reproduction run."""
-
     def __init__(
         self,
         backend: DockerSandbox,
