@@ -71,9 +71,7 @@ async def investigate_harness(
 
     plan = read_harness_plan(plan_path)
     if plan is None:
-        caveats.append(
-            "Harness did not emit .reproforge/harness-plan.json; repository-detected test commands were used."
-        )
+        caveats.append("Harness did not emit .reproforge/harness-plan.json; repository-detected test commands were used.")
         plan = HarnessPlan()
     interpretation = plan.interpretation or ("\n".join(messages[-5:]) if messages else None)
     return plan, interpretation, caveats, runtime.results
