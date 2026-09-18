@@ -83,6 +83,28 @@ class DockerSession:
             await self._restart_after_timeout()
         return result
 
+    async def reset_runtime(self) -> None:
+        """Restart the container while retaining its writable image layer.
+
+        Restarting clears background processes and recreates tmpfs-backed HOME,
+        while preserving setup work installed into the container layer. The bind
+        mounted workspace is restored separately by the reproduction engine.
+        """
+
+        if not self._started:
+            raise SandboxError("Docker session has not been started")
+        proc = await asyncio.create_subprocess_exec(
+            "docker",
+            "restart",
+            self.name,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            await self.close()
+            raise SandboxError("failed to reset Docker sandbox: " + stderr.decode(errors="replace")[:1000])
+
     async def _restart_after_timeout(self) -> None:
         kill = await asyncio.create_subprocess_exec(
             "docker",
