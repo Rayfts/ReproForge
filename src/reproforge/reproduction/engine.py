@@ -67,11 +67,7 @@ class ReproductionEngine:
         revision = await safe_revision(repository)
         environment = environment_snapshot(self.config, inspection, revision)
         selected_environment = self.config.selected_environment()
-        secret_values = tuple(
-            value
-            for key, value in selected_environment.items()
-            if key in self.config.security.allowed_secrets
-        )
+        secret_values = tuple(value for key, value in selected_environment.items() if key in self.config.security.allowed_secrets)
 
         policy_error = runtime_policy_error(self.config)
         if policy_error is not None:
@@ -142,10 +138,7 @@ class ReproductionEngine:
                     started=started,
                     environment=environment,
                     status=RunStatus.SETUP_FAILURE,
-                    summary=(
-                        "Baseline build/check failed before reproduction investigation: "
-                        + " ".join(failed_baseline.command.argv)
-                    ),
+                    summary="Baseline build/check failed before reproduction investigation: " + " ".join(failed_baseline.command.argv),
                     setup_results=setup_results,
                     baseline_results=baseline_results,
                     caveats=[
@@ -267,11 +260,7 @@ class ReproductionEngine:
         commands: list[CommandSpec],
     ) -> AttemptRecord:
         results = await run_commands(session, commands)
-        signals = [
-            signal
-            for index, result in enumerate(results)
-            for signal in inspect_command(result, command_index=index)
-        ]
+        signals = [signal for index, result in enumerate(results) for signal in inspect_command(result, command_index=index)]
         return AttemptRecord(attempt=number, commands=results, signals=signals, reproduced=bool(signals))
 
     async def _maybe_minimize(
@@ -304,11 +293,7 @@ class ReproductionEngine:
         async def preserves(candidate: Sequence[CommandSpec]) -> bool:
             await self._reset_trial(session, snapshot)
             results = await run_commands(session, list(candidate))
-            signals = [
-                signal
-                for index, result in enumerate(results)
-                for signal in inspect_command(result, command_index=index)
-            ]
+            signals = [signal for index, result in enumerate(results) for signal in inspect_command(result, command_index=index)]
             return any(signal.fingerprint == fingerprint for signal in signals)
 
         return await ddmin(commands, preserves, max_trials=self.config.minimization.max_trials)
