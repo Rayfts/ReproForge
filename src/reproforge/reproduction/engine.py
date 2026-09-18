@@ -139,7 +139,7 @@ class ReproductionEngine:
                     environment=environment,
                     status=RunStatus.SETUP_FAILURE,
                     summary="Baseline build/check failed before reproduction investigation: "
-                    + " ".join(failed_baseline.command.argv),  # noqa: E501
+                    + " ".join(failed_baseline.command.argv),
                     setup_results=setup_results,
                     baseline_results=baseline_results,
                     caveats=[
