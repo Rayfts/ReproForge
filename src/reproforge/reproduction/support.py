@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import platform
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -27,6 +29,59 @@ _BASE_FORBIDDEN_PATHS = frozenset(
         "/var/run/docker.sock",
     }
 )
+_SNAPSHOT_EXCLUDES = frozenset({".reproforge"})
+
+
+class WorkspaceSnapshot:
+    """Restorable copy of a post-investigation workspace.
+
+    `.reproforge` is intentionally excluded so evidence produced by individual
+    attempts survives restores. Everything else, including `.git`, is restored
+    so attempts do not inherit filesystem or repository state from earlier runs.
+    """
+
+    def __init__(self, workspace: Path) -> None:
+        self.workspace = workspace.resolve()
+        self._temporary = tempfile.TemporaryDirectory(prefix="reproforge-snapshot-")
+        self.root = Path(self._temporary.name) / "workspace"
+        self.root.mkdir()
+        self._copy_workspace(self.workspace, self.root)
+
+    def restore(self) -> None:
+        for child in self.workspace.iterdir():
+            if child.name in _SNAPSHOT_EXCLUDES:
+                continue
+            _remove_path(child)
+        self._copy_workspace(self.root, self.workspace)
+
+    def close(self) -> None:
+        self._temporary.cleanup()
+
+    def __enter__(self) -> WorkspaceSnapshot:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
+
+    @staticmethod
+    def _copy_workspace(source: Path, destination: Path) -> None:
+        for child in source.iterdir():
+            if child.name in _SNAPSHOT_EXCLUDES:
+                continue
+            target = destination / child.name
+            if child.is_symlink():
+                target.symlink_to(child.readlink(), target_is_directory=child.is_dir())
+            elif child.is_dir():
+                shutil.copytree(child, target, symlinks=True)
+            else:
+                shutil.copy2(child, target, follow_symlinks=False)
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.exists():
+        shutil.rmtree(path)
 
 
 async def run_commands(
