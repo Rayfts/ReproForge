@@ -295,4 +295,8 @@ def _host_user() -> str | None:
 
     if os.name == "nt":
         return None
-    return f"{os.getuid()}:{os.getgid()}"
+    getuid = getattr(os, "getuid", None)
+    getgid = getattr(os, "getgid", None)
+    if getuid is None or getgid is None:
+        return None
+    return f"{getuid()}:{getgid()}"
