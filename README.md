@@ -109,7 +109,7 @@ ReproForge does not pretend every coding agent has the same integration surface.
 | OpenAI Codex | `openai/codex` | `codex exec` JSONL | Yes |
 | Claude Code | `anthropics/claude-code` | headless `claude` stream JSON | Yes |
 | OpenCode | `anomalyco/opencode` | `opencode run --format json` | Yes |
-| Pi | `earendil-works/pi` | JSON mode; upstream also exposes RPC | Yes |
+| Pi | `mitsuhiko/pi-mono` | JSON mode; upstream also exposes RPC | Yes |
 | Gemini CLI | `google-gemini/gemini-cli` | non-interactive stream JSON | Yes |
 | Aider | `Aider-AI/aider` | one-shot CLI, captured stdout/stderr | No verified event stream |
 | Goose | `aaif-goose/goose` | headless stream JSON | Yes |
