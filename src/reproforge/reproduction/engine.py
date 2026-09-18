@@ -21,6 +21,7 @@ from reproforge.repository.git import GitRepository
 from reproforge.reports.writer import write_report_bundle
 from reproforge.reproduction.investigation import HarnessPlan, investigate_harness
 from reproforge.reproduction.support import (
+    WorkspaceSnapshot,
     capture_repository_patch,
     command_succeeded,
     environment_snapshot,
@@ -199,21 +200,32 @@ class ReproductionEngine:
                 write_report_bundle(workspace, report, secret_values=secret_values)
                 return report
 
-            for number in range(1, self.config.reproduction_attempts + 1):
-                attempt = await self._attempt(session, number=number, commands=reproduction_commands)
-                attempt.filesystem_diff_path = await capture_repository_patch(
-                    repository,
-                    workspace,
-                    f"attempt-{number:03d}.patch",
-                    secret_values,
+            with WorkspaceSnapshot(workspace) as snapshot:
+                caveats.append(
+                    "Validation and minimization trials restore the same post-investigation workspace and restart "
+                    "the Docker runtime between trials; external services or remote network state are outside that snapshot."
                 )
-                attempts.append(attempt)
+                for number in range(1, self.config.reproduction_attempts + 1):
+                    await self._reset_trial(session, snapshot)
+                    attempt = await self._attempt(session, number=number, commands=reproduction_commands)
+                    attempt.filesystem_diff_path = await capture_repository_patch(
+                        repository,
+                        workspace,
+                        f"attempt-{number:03d}.patch",
+                        secret_values,
+                    )
+                    attempts.append(attempt)
 
-            status, rate, deterministic, confidence, primary = classify_attempts(
-                attempts,
-                flake_threshold=self.config.flake_threshold,
-            )
-            minimized = await self._maybe_minimize(session, reproduction_commands, primary.fingerprint if primary else None)
+                status, rate, deterministic, confidence, primary = classify_attempts(
+                    attempts,
+                    flake_threshold=self.config.flake_threshold,
+                )
+                minimized = await self._maybe_minimize(
+                    session,
+                    snapshot,
+                    reproduction_commands,
+                    primary.fingerprint if primary else None,
+                )
 
             report = ReproductionReport(
                 run_id=run_id,
@@ -242,6 +254,11 @@ class ReproductionEngine:
             write_report_bundle(workspace, report, secret_values=secret_values)
             return report
 
+    @staticmethod
+    async def _reset_trial(session: DockerSession, snapshot: WorkspaceSnapshot) -> None:
+        await session.reset_runtime()
+        snapshot.restore()
+
     async def _attempt(
         self,
         session: DockerSession,
@@ -260,12 +277,18 @@ class ReproductionEngine:
     async def _maybe_minimize(
         self,
         session: DockerSession,
+        snapshot: WorkspaceSnapshot,
         commands: list[CommandSpec],
         fingerprint: str | None,
     ) -> str | None:
         if not fingerprint or not self.config.minimization.enabled or len(commands) <= 1:
             return None
-        minimized = await self._minimize_commands(session, commands=commands, fingerprint=fingerprint)
+        minimized = await self._minimize_commands(
+            session,
+            snapshot=snapshot,
+            commands=commands,
+            fingerprint=fingerprint,
+        )
         if len(minimized) >= len(commands):
             return None
         return "\n".join(" ".join(command.argv) for command in minimized)
@@ -274,10 +297,12 @@ class ReproductionEngine:
         self,
         session: DockerSession,
         *,
+        snapshot: WorkspaceSnapshot,
         commands: list[CommandSpec],
         fingerprint: str,
     ) -> list[CommandSpec]:
         async def preserves(candidate: Sequence[CommandSpec]) -> bool:
+            await self._reset_trial(session, snapshot)
             results = await run_commands(session, list(candidate))
             signals = [
                 signal
