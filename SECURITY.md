@@ -1,28 +1,30 @@
-# Security policy
+# Security Policy
 
 ReproForge intentionally executes untrusted repositories and should be treated as security-sensitive infrastructure.
 
 ## Reporting a vulnerability
 
-Please report vulnerabilities privately through GitHub Security Advisories for `Rayfts/ReproForge` when available. Do not open a public issue containing an exploit, credential, or bypass for the sandbox boundary.
+Please do not publish exploit details, credentials, sandbox escapes, or secret-exfiltration techniques in a public issue.
 
-Include the affected version/commit, operating system, Docker version, minimal reproduction, impact, and whether the issue can escape the container, read unintended host data, or exfiltrate an explicitly injected secret.
+If GitHub private vulnerability reporting is enabled for the repository, use **Security → Report a vulnerability**. Otherwise, open a minimal public issue that contains no sensitive details and asks the maintainer for a private reporting channel.
+
+Useful reports include the affected commit/version, operating system, Docker version, minimal reproduction, expected impact, and whether the issue can escape the container, access unintended host data, or expose an explicitly injected secret.
 
 ## Security invariants
 
 ReproForge must not silently:
 
 - execute target repository commands directly on the host;
-- mount `/var/run/docker.sock`, host SSH keys, cloud credentials, or the user's home directory;
+- mount the Docker socket, SSH keys, cloud credentials, or the user's home directory;
 - inherit ambient environment variables;
-- inject `GITHUB_TOKEN`, `GH_TOKEN`, or provider credentials unless the user explicitly allowlists them;
+- inject GitHub/model/provider credentials without explicit operator approval;
 - enable network access merely because setup failed without it;
-- automatically push an agent-generated patch.
+- automatically push agent-generated changes.
 
-The workspace itself is intentionally writable and bind-mounted because reproduction may need to create tests or fixtures. Treat all resulting files as untrusted.
+The workspace is intentionally writable because reproduction may create tests, fixtures, or patches. Treat every resulting file as untrusted.
 
-## Explicit secret injection
+## Secret injection
 
-`security.allowed_secrets` is an escape hatch, not a safety guarantee. An injected secret is readable by processes in the sandbox. If network is enabled, untrusted code may be able to exfiltrate it. Prefer short-lived, narrowly scoped credentials and avoid injecting secrets into arbitrary issue reproductions.
+Explicit secret injection is an escape hatch, not a safety guarantee. Code inside the sandbox can read injected values and may exfiltrate them when network access is permitted. Prefer short-lived, narrowly scoped credentials and avoid secrets for arbitrary third-party issue reproductions.
 
-See `docs/threat-model.md` for the detailed model.
+See `docs/threat-model.md` and `docs/sandbox.md` for the detailed trust model.
