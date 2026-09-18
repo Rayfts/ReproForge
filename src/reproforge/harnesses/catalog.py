@@ -74,13 +74,13 @@ CAPABILITIES: dict[str, AdapterSpec] = {
         CapabilityReport(
             id="pi",
             display_name="Pi",
-            repository="earendil-works/pi",
+            repository="mitsuhiko/pi-mono",
             integration_modes=[IntegrationMode.CLI, IntegrationMode.JSON_STREAM, IntegrationMode.RPC],
             structured_output=True,
             supports_resume=True,
             evidence_urls=[
-                "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/usage.md",
-                "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/index.md",
+                "https://github.com/mitsuhiko/pi-mono/blob/main/packages/coding-agent/docs/usage.md",
+                "https://github.com/mitsuhiko/pi-mono/blob/main/packages/coding-agent/docs/rpc.md",
             ],
         ),
         "pi",
