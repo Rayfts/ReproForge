@@ -116,10 +116,7 @@ def workspace_policy_error(config: ReproForgeConfig, workspace: Path) -> str | N
     for raw_path in forbidden_paths:
         forbidden = Path(raw_path).expanduser().resolve(strict=False)
         if _paths_intersect(resolved_workspace, forbidden):
-            return (
-                f"Workspace {resolved_workspace} intersects forbidden host path {forbidden}; "
-                "refusing to inspect or mount it."
-            )
+            return f"Workspace {resolved_workspace} intersects forbidden host path {forbidden}; refusing to inspect or mount it."
     return None
 
 
