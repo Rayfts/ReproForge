@@ -154,11 +154,7 @@ async def _execute_and_archive(
 ) -> ReproductionReport:
     report = await ReproductionEngine(config).run(request, workspace=workspace)
     selected_environment = config.selected_environment()
-    secret_values = tuple(
-        value
-        for key, value in selected_environment.items()
-        if key in config.security.allowed_secrets
-    )
+    secret_values = tuple(value for key, value in selected_environment.items() if key in config.security.allowed_secrets)
     archive = archive_run(workspace, report, secret_values=secret_values)
     store().upsert(report.run_id, archive, report.status.value)
     print_report(report)
