@@ -165,10 +165,7 @@ class CliHarnessAdapter:
 
     async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]:
         if self._runtime is None:
-            raise RuntimeError(
-                f"{self.id} requires an injected sandbox HarnessRuntime; "
-                "host execution is intentionally disabled"
-            )
+            raise RuntimeError(f"{self.id} requires an injected sandbox HarnessRuntime; host execution is intentionally disabled")  # noqa: E501
         invocation = self.build_invocation(request)
         async for event in self._runtime.stream(invocation, harness_id=self.id):
             yield event
@@ -191,10 +188,7 @@ class ArchivalHarnessAdapter:
 
     def build_invocation(self, request: HarnessRunRequest) -> HarnessInvocation:
         del request
-        raise RuntimeError(
-            f"{self.id} has no current supported headless launcher; "
-            "historical artifacts must be imported explicitly"
-        )
+        raise RuntimeError(f"{self.id} has no current supported headless launcher; historical artifacts must be imported explicitly")  # noqa: E501
 
     async def run(self, request: HarnessRunRequest) -> AsyncIterator[HarnessEvent]:
         del request
